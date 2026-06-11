@@ -1,6 +1,16 @@
-import React, { useState } from 'react';
-import { Brain, Users, Home, Cpu, Database, ShieldCheck, Award, Activity, Heart, Info, Globe, AlertTriangle, LifeBuoy, X, Sparkles } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { Brain, Users, Home, Cpu, Database, ShieldCheck, Award, Activity, Heart, Info, Globe, AlertTriangle, LifeBuoy, X, Sparkles, Play, Pause, Clock, Zap, Sliders, FlaskConical } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  Tooltip,
+  CartesianGrid,
+  ReferenceLine
+} from 'recharts';
 import { CognitiveState, BiometricState } from './types';
 import HomePage from './components/HomePage';
 import StudentWorkspace from './components/StudentWorkspace'; import TeacherDashboard from './components/TeacherDashboard';
@@ -10,9 +20,31 @@ import CloudAndVertex from './components/CloudAndVertex';
 import EthicsAndXAI from './components/EthicsAndXAI';
 import SolveForTomorrow from './components/SolveForTomorrow';
 import { sendDistressSignal, DistressSignal } from './lib/firebase';
+import WellnessCompanionSidebar from './components/WellnessCompanionSidebar';
+import ResearchAcademicSandbox from './components/ResearchAcademicSandbox';
+
+const generateInitialPulseHistory = (): { time: string; intensity: number }[] => {
+  const data = [];
+  const now = Date.now();
+  for (let i = 29; i >= 0; i--) {
+    const secsAgo = i === 0 ? 'Now' : `-${i * 2}s`;
+    const baseWave = 65 + Math.sin(i * 0.45) * 12 + Math.cos(i * 0.9) * 3;
+    const noise = Math.random() * 5 - 2.5;
+    data.push({
+      time: secsAgo,
+      intensity: Math.min(100, Math.max(10, Math.round(baseWave + noise)))
+    });
+  }
+  return data;
+};
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'student' | 'teacher' | 'parent' | 'arch' | 'cloud' | 'ethics' | 'samsung'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'student' | 'teacher' | 'parent' | 'arch' | 'cloud' | 'ethics' | 'samsung' | 'research'>('home');
+
+  // Real-time Cognitive Pulse telemetries (last 60 seconds / 2-second interval)
+  const [pulseHistory, setPulseHistory] = useState(() => generateInitialPulseHistory());
+  const [isPulseModalOpen, setIsPulseModalOpen] = useState(false);
+  const [isStreamPaused, setIsStreamPaused] = useState(false);
 
   // Shared Biometric / Cognitive states for the live simulation
   const [cognitive, setCognitive] = useState<CognitiveState>({
@@ -28,6 +60,81 @@ export default function App() {
     heartRate: 70,
     temperature: 36.60
   });
+
+  const [highStressCount, setHighStressCount] = useState(0);
+
+  // Tracks switches from 'Optimal' to either 'High Stress' or 'Low Attention' for more than 10 seconds
+  const [pulseToast, setPulseToast] = useState<{
+    message: string;
+    type: 'stress' | 'attention';
+    timestamp: string;
+  } | null>(null);
+
+  // Track recent high-stress occurrences over the active session
+  useEffect(() => {
+    if (cognitive.stress === 'High') {
+      setHighStressCount(prev => prev + 1);
+    }
+  }, [cognitive.stress]);
+
+  useEffect(() => {
+    const currentState = cognitive.stress === 'High' ? 'High Stress' : cognitive.attention === 'Low' ? 'Low Attention' : 'Optimal';
+
+    if (currentState === 'Optimal') {
+      // Switched back to Optimal - automatically dismiss the warning toast
+      setPulseToast(null);
+      return;
+    }
+
+    // Set a timer for 10 seconds (10000ms) to trigger a warning toast
+    const timer = setTimeout(() => {
+      const type = currentState === 'High Stress' ? 'stress' : 'attention';
+      const message = currentState === 'High Stress'
+        ? "Alex Mercer's neural sensors indicate sustained High Stress level for over 10 seconds. Recommending a breathing break."
+        : "Low Attention span detected for over 10 seconds. Try launching a gamified quiz module to regain focus alignment.";
+      
+      setPulseToast({
+        message,
+        type,
+        timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+      });
+    }, 10000);
+
+    return () => clearTimeout(timer);
+  }, [cognitive.stress, cognitive.attention]);
+
+  // Telemetry loop for simulating real-time brain pulses
+  useEffect(() => {
+    if (isStreamPaused) return;
+
+    const interval = setInterval(() => {
+      setPulseHistory((prev) => {
+        const next = prev.slice(1).map((item, idx) => {
+          const secs = (30 - idx - 1) * 2;
+          return {
+            ...item,
+            time: `-${secs}s`
+          };
+        });
+
+        const baseWave = 68 + Math.sin(Date.now() / 8000) * 12 + Math.cos(Date.now() / 3000) * 4;
+        const attentionMultiplier = cognitive.attention === 'High' ? 6 : cognitive.attention === 'Low' ? -12 : 0;
+        const fatigueMultiplier = cognitive.fatigue === 'High' ? -8 : 0;
+        const noise = Math.random() * 6 - 3;
+        
+        const newIntensity = Math.min(100, Math.max(10, Math.round(baseWave + attentionMultiplier + fatigueMultiplier + noise)));
+
+        next.push({
+          time: 'Now',
+          intensity: newIntensity
+        });
+
+        return next;
+      });
+    }, 2000);
+
+    return () => clearInterval(interval);
+  }, [isStreamPaused, cognitive]);
 
   // Emergency help distress states
   const [isEmergencyModalOpen, setIsEmergencyModalOpen] = useState(false);
@@ -65,8 +172,74 @@ export default function App() {
     }
   };
 
+  // State-Adaptive Themes properties definition
+  const isHighStress = cognitive.stress === 'High';
+  const isLowAttention = cognitive.attention === 'Low';
+
+  let themeContainerClass = "bg-slate-950 text-slate-100 transition-colors duration-1000";
+  let themeBadgeText = "Standard Slate Mode";
+  let themeBadgeColor = "text-emerald-450 bg-emerald-950/25 border-emerald-900/40 text-emerald-400";
+  let themeDescription = "Cranial parameters baseline neutral. Default dark layout active.";
+  let themeAccentText = "text-emerald-400";
+  let themeIconComponent = <Sparkles className="h-4 w-4 text-emerald-400" />;
+  
+  if (isHighStress) {
+    themeContainerClass = "bg-gradient-to-b from-[#060410] via-[#090b20] to-[#0e0719] text-indigo-50 transition-colors duration-1000 selection:bg-purple-900 selection:text-white";
+    themeBadgeText = "Calming Lavender-Indigo Mode";
+    themeBadgeColor = "text-purple-400 bg-purple-950/40 border-purple-900/60 font-bold animate-pulse";
+    themeDescription = "EEG telemetry indicates high stress. Calming deep lavender/indigo tones applied to induce systemic relaxation & lower cognitive load.";
+    themeAccentText = "text-purple-400";
+    themeIconComponent = <Heart className="h-4 w-4 text-purple-400 animate-pulse" />;
+  } else if (isLowAttention) {
+    themeContainerClass = "bg-gradient-to-tr from-[#0a0a09] via-[#241304] to-[#0d0701] text-amber-50 transition-colors duration-1000 selection:bg-amber-900 selection:text-white border-t-2 border-amber-600/45";
+    themeBadgeText = "Vibrant Neuro-Stimulus Mode";
+    themeBadgeColor = "text-amber-400 bg-amber-955/50 border-amber-950/60 font-black animate-pulse";
+    themeDescription = "EEG telemetry indicates low focus. High-contrast energetic orange/gold highlights applied to stimulate wearer alertness.";
+    themeAccentText = "text-amber-400";
+    themeIconComponent = <Zap className="h-4 w-4 text-amber-400 animate-bounce" />;
+  }
+  
+  let pulseColorClass = 'text-emerald-400';
+  let pulseBgClass = 'bg-emerald-400';
+  let pulseBorderClass = 'border-emerald-500/30';
+  let pulseStatusText = 'Cognitive Pulse';
+  let graphColor = '#10b981'; // emerald
+  let pingBgClass = 'bg-emerald-400';
+  
+  if (isHighStress) {
+    pulseColorClass = 'text-red-400';
+    pulseBgClass = 'bg-red-400';
+    pulseBorderClass = 'border-red-500/30';
+    pulseStatusText = 'Pulse: High Stress';
+    graphColor = '#f43f5e'; // rose/red
+    pingBgClass = 'bg-red-400';
+  } else if (isLowAttention) {
+    pulseColorClass = 'text-amber-400';
+    pulseBgClass = 'bg-amber-400';
+    pulseBorderClass = 'border-amber-500/30';
+    pulseStatusText = 'Pulse: Low Focus';
+    graphColor = '#f59e0b'; // amber
+    pingBgClass = 'bg-amber-400';
+  }
+
+  // Dynamic baseline threshold calculations
+  const baselineY = 68;
+  const optimalMin = 60;
+  const optimalMax = 78;
+  const currentIntensity = pulseHistory[pulseHistory.length - 1]?.intensity || 0;
+  
+  let thresholdLineColor = '#10b981'; // calming emerald for optimal range
+  let thresholdStatusText = 'Optimal (68%)';
+  if (currentIntensity > optimalMax) {
+    thresholdLineColor = '#f43f5e'; // warning rose/red for high hyperactive spikes
+    thresholdStatusText = 'High Stress Alert';
+  } else if (currentIntensity < optimalMin) {
+    thresholdLineColor = '#f59e0b'; // warning amber/yellow for low-focus drop-offs
+    thresholdStatusText = 'Low Focus Alert';
+  }
+
   return (
-    <div className="min-h-screen bg-slate-950 text-slate-100 flex flex-col font-sans" id="neurolearn-root-container">
+    <div className={`min-h-screen ${themeContainerClass} flex flex-col font-sans`} id="neurolearn-root-container">
       
       {/* GLOBAL HIGH-FIDELITY APP HEADER */}
       <header className="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 p-4 sticky top-0 z-50">
@@ -85,9 +258,56 @@ export default function App() {
 
           <div className="flex items-center space-x-3">
             {/* Live active wearer block */}
-            <div className="bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-lg text-[10px] text-slate-400 font-medium flex items-center gap-1.5 font-mono">
-              <span className="h-1.5 w-1.5 rounded-full bg-indigo-500"></span>
-              <span>Wearer: <strong className="text-slate-200">Alex Mercer</strong></span>
+            <div className="bg-slate-950/60 border border-slate-800 px-3 py-1.5 rounded-lg text-[10px] text-slate-400 font-medium flex items-center gap-2.5 font-mono">
+              <div className="flex items-center gap-1.5">
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75 animate-duration-1000"></span>
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500"></span>
+                </span>
+                <span>Wearer: <strong className="text-slate-200">Alex Mercer</strong></span>
+              </div>
+              <div className="h-3 w-px bg-slate-800" />
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPulseModalOpen(true);
+                }}
+                title={`Click to view 60s Pulse Telemetry history (${isHighStress ? 'High Stress' : isLowAttention ? 'Low Attention' : 'Optimal'})`}
+                className={`flex items-center gap-2 hover:bg-slate-900 px-2 py-0.5 rounded cursor-pointer transition-all border border-transparent hover:border-slate-800/80 text-[10px] ${
+                  isHighStress
+                    ? 'bg-red-950/20'
+                    : isLowAttention
+                    ? 'bg-amber-950/20'
+                    : ''
+                }`}
+                id="header-cognitive-pulse-trigger"
+              >
+                <span className={`text-[9px] uppercase font-bold tracking-wider flex items-center gap-1.5 animate-pulse ${pulseColorClass}`}>
+                  {pulseStatusText}
+                </span>
+                {highStressCount > 0 && (
+                  <span className="bg-red-500 text-white font-mono font-extrabold text-[9px] h-3.5 min-w-[14px] px-1 rounded-full flex items-center justify-center animate-bounce shadow-sm shadow-red-500/30" title={`${highStressCount} high stress occurrences this session`}>
+                    {highStressCount}
+                  </span>
+                )}
+                <span className="flex items-center gap-0.5 h-3">
+                  <motion.span
+                    animate={{ height: [4, 12, 4] }}
+                    transition={{ repeat: Infinity, duration: 1.2, ease: "easeInOut" }}
+                    className={`w-0.5 rounded-full block ${pulseBgClass}`}
+                  />
+                  <motion.span
+                    animate={{ height: [10, 4, 10] }}
+                    transition={{ repeat: Infinity, duration: 0.8, ease: "easeInOut" }}
+                    className={`w-0.5 rounded-full block ${pulseBgClass}`}
+                  />
+                  <motion.span
+                    animate={{ height: [3, 9, 3] }}
+                    transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                    className={`w-0.5 rounded-full block ${pulseBgClass}`}
+                  />
+                </span>
+              </button>
             </div>
 
             {/* Global simulated disaster trigger button */}
@@ -261,8 +481,112 @@ export default function App() {
               />
             )}
           </button>
+
+          <button
+            onClick={() => setActiveTab('research')}
+            className={`relative px-3.5 py-2.5 rounded-lg text-xs font-semibold transition-all duration-200 flex items-center space-x-1.5 cursor-pointer whitespace-nowrap ${
+              activeTab === 'research' 
+                ? 'bg-indigo-600/15 text-indigo-400 font-bold shadow-sm' 
+                : 'text-slate-400 hover:text-slate-205 text-slate-350'
+            }`}
+          >
+            <FlaskConical className="h-3.5 w-3.5 text-indigo-400 animate-pulse" />
+            <span>Academic Sandbox</span>
+            {activeTab === 'research' && (
+              <motion.span
+                layoutId="activeTabUnderline"
+                className="absolute bottom-1 left-2.5 right-2.5 h-0.5 bg-indigo-500 rounded-full shadow-[0_0_8px_rgba(99,102,241,0.6)]"
+                transition={{ type: "spring", stiffness: 380, damping: 30 }}
+              />
+            )}
+          </button>
         </div>
       </nav>
+
+      {/* STATE-ADAPTIVE THEME METADATA HUD BAR */}
+      <div className="max-w-7xl mx-auto w-full px-4 md:px-6 pt-4" id="state-adaptive-theme-hud">
+        <div className={`p-4 rounded-2xl border transition-all duration-1000 flex flex-col md:flex-row items-center justify-between gap-4 ${
+          isHighStress 
+            ? 'bg-purple-950/20 border-purple-800/45 shadow-lg shadow-purple-950/40' 
+            : isLowAttention 
+            ? 'bg-amber-955/15 border-amber-800/40 shadow-lg shadow-amber-955/20' 
+            : 'bg-slate-900/45 border-slate-800/70'
+        }`}>
+          <div className="flex items-start gap-3.5">
+            <div className={`p-2.5 rounded-xl border transition-all duration-1000 bg-slate-950/80 ${
+              isHighStress 
+                ? 'border-purple-900 text-purple-400' 
+                : isLowAttention 
+                ? 'border-amber-900 text-amber-400' 
+                : 'border-slate-800 text-emerald-400'
+            }`}>
+              {themeIconComponent}
+            </div>
+
+            <div className="space-y-1">
+              <div className="flex items-center flex-wrap gap-2">
+                <span className="text-[10px] uppercase font-bold tracking-widest text-slate-500 font-mono">Neural Biofeedback Theme Engine</span>
+                <span className={`px-2 py-0.5 rounded text-[10px] font-mono font-extrabold border ${themeBadgeColor}`}>
+                  {themeBadgeText}
+                </span>
+              </div>
+              <p className="text-xs text-slate-300 font-sans leading-snug">
+                {themeDescription}
+              </p>
+            </div>
+          </div>
+
+          {/* Quick Simulation triggers to make validation instant and satisfying */}
+          <div className="flex flex-wrap items-center gap-2 bg-slate-950/50 p-2 rounded-xl border border-slate-900 font-mono text-[9px] w-full md:w-auto justify-end">
+            <span className="text-slate-500 uppercase font-black tracking-wider px-1.5">Simulation Overrides</span>
+            <button
+              onClick={() => {
+                setCognitive(prev => ({ ...prev, stress: 'High', attention: 'High' }));
+                setBiometric(prev => ({ ...prev, heartRate: 110, gsr: 6.8, hrv: 32 }));
+              }}
+              className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase transition-all cursor-pointer ${
+                isHighStress 
+                  ? 'bg-purple-950 text-purple-400 border-purple-800' 
+                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+              }`}
+              title="Simulate High Stress"
+              type="button"
+            >
+              High Stress
+            </button>
+            <button
+              onClick={() => {
+                setCognitive(prev => ({ ...prev, attention: 'Low', stress: 'Low' }));
+                setBiometric(prev => ({ ...prev, heartRate: 58, gsr: 1.1, hrv: 85 }));
+              }}
+              className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase transition-all cursor-pointer ${
+                isLowAttention 
+                  ? 'bg-amber-950 text-amber-400 border-amber-800' 
+                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-200'
+              }`}
+              title="Simulate Low Attention"
+              type="button"
+            >
+              Low Attention
+            </button>
+            <button
+              onClick={() => {
+                setCognitive(prev => ({ ...prev, stress: 'Low', attention: 'High' }));
+                setBiometric(prev => ({ ...prev, heartRate: 72, gsr: 2.1, hrv: 76 }));
+              }}
+              className={`px-3 py-1.5 rounded-lg border text-[9px] font-bold uppercase transition-all cursor-pointer ${
+                (!isHighStress && !isLowAttention) 
+                  ? 'bg-emerald-950 text-emerald-400 border-emerald-800/80' 
+                  : 'bg-slate-900 text-slate-400 border-slate-800 hover:text-slate-100'
+              }`}
+              title="Force Optimal State"
+              type="button"
+            >
+              Optimal State
+            </button>
+          </div>
+        </div>
+      </div>
 
       {/* MAIN LAYOUT SPACE */}
       <main className="flex-1 max-w-7xl w-full mx-auto p-4 md:p-6 pb-20">
@@ -306,17 +630,75 @@ export default function App() {
           {activeTab === 'ethics' && <EthicsAndXAI />}
 
           {activeTab === 'samsung' && <SolveForTomorrow />}
+
+          {activeTab === 'research' && (
+            <ResearchAcademicSandbox 
+              cognitive={cognitive} 
+              biometric={biometric} 
+            />
+          )}
         </motion.div>
       </main>
 
       {/* PROFESSIONAL SLATE APP FOOTER */}
-      <footer className="bg-slate-950 border-t border-slate-900 p-6 text-center text-xs text-slate-500 space-y-2 mt-auto">
-        <p className="max-w-2xl mx-auto leading-relaxed">
-          <strong>NeuroLearn AI Applet Proof-of-concept</strong>. Developed for standard evaluation with active post-training quantized edge routines, BigQuery analytics warehouses and premium Gemini learning assistants.
-        </p>
-        <p className="text-[10px] text-slate-600">
-          SDG 3 • SDG 4 • SDG 9 • SDG 10 | Protected under dual AES-256 GCM encrypted channels. All rights reserved.
-        </p>
+      <footer className="bg-slate-950/90 border-t border-slate-900/80 py-8 px-6 text-xs text-slate-500 mt-auto font-sans" id="neurolearn-pro-footer">
+        <div className="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-6 items-center">
+          {/* Brand and Description Info */}
+          <div className="md:col-span-6 space-y-2 text-center md:text-left">
+            <div className="flex items-center justify-center md:justify-start space-x-2">
+              <div className="bg-indigo-600/10 p-1.5 rounded-lg border border-indigo-500/20">
+                <Brain className="h-4 w-4 text-indigo-400" />
+              </div>
+              <span className="font-mono text-xs font-black text-slate-350 tracking-wider">NEUROLEARN AI</span>
+              <span className="bg-indigo-950 text-indigo-400 font-mono text-[9px] px-2 py-0.5 rounded-full border border-indigo-900/40">POC v3.2.0</span>
+            </div>
+            <p className="text-slate-400 leading-relaxed max-w-xl">
+              <strong>NeuroLearn AI Applet Proof-of-concept</strong>. Developed for standard evaluation with active post-training quantized edge routines, BigQuery analytics warehouses, and premium Gemini learning assistants.
+            </p>
+          </div>
+
+          {/* SDG Micro Badges list */}
+          <div className="md:col-span-3 flex flex-col items-center justify-center space-y-2.5">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-slate-500 font-bold">SDG Target Frameworks</span>
+            <div className="flex flex-wrap gap-1.5 justify-center">
+              {['SDG 3', 'SDG 4', 'SDG 9', 'SDG 10'].map((sdg) => (
+                <span key={sdg} className="px-2 py-0.5 bg-slate-900 border border-slate-800 text-slate-400 text-[9.5px] font-mono font-extrabold rounded-md hover:border-slate-750 transition-all hover:text-slate-200">
+                  {sdg}
+                </span>
+              ))}
+            </div>
+          </div>
+
+          {/* Secure channels & copyright metadata */}
+          <div className="md:col-span-3 text-center md:text-right space-y-2 sm:space-y-1.5 font-mono">
+            <div className="inline-flex items-center gap-1.5 bg-rose-950/25 border border-rose-900/30 px-2.5 py-1 rounded-lg text-rose-400 text-[9.5px] font-bold">
+              <ShieldCheck className="h-3 w-3 animate-pulse text-rose-500" />
+              <span>AES-256 GCM SECURED</span>
+            </div>
+            <p className="text-[9.5px] text-slate-500 leading-relaxed">
+              Protected under dual AES-256 GCM encrypted channels.<br />
+              All rights reserved. © {new Date().getFullYear()} NeuroLearn.
+            </p>
+          </div>
+        </div>
+
+        {/* Bottom subtle bar */}
+        <div className="max-w-7xl mx-auto pt-5 mt-6 border-t border-slate-900 flex flex-col sm:flex-row justify-between items-center text-[10px] text-slate-600 gap-2 font-mono">
+          <div className="flex items-center gap-2">
+            <span className="relative flex h-1.5 w-1.5">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-emerald-500"></span>
+            </span>
+            <span>Edge Routines: Quantized INT8</span>
+          </div>
+          <div>
+            <span>Data Source: BigQuery Analytics Warehouse</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <Sparkles className="h-3 w-3 text-indigo-400 animate-pulse" />
+            <span>AI Provider: Gemini 2.5 Flash</span>
+          </div>
+        </div>
       </footer>
 
       {/* GLOBAL EMERGENCY DISTRESS SIGNAL SIMULATOR MODAL */}
@@ -469,7 +851,291 @@ export default function App() {
             </motion.div>
           </div>
         )}
+
+        {/* REAL-TIME COGNITIVE PULSE HISTORY MODAL */}
+        {isPulseModalOpen && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 animate-fade-in" id="pulse-history-modal-backdrop">
+            {/* Backdrop slide-in and blur */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              onClick={() => setIsPulseModalOpen(false)}
+              className="absolute inset-0 bg-slate-950/80 backdrop-blur-sm"
+            />
+
+            {/* Modal Body */}
+            <motion.div
+              initial={{ scale: 0.95, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.95, opacity: 0 }}
+              className="relative bg-slate-900 border border-indigo-900/30 rounded-2xl max-w-md w-full overflow-hidden shadow-2xl p-5 space-y-4"
+              id="pulse-modal-content-panel"
+            >
+              <div className="flex items-start justify-between">
+                <div className={`flex items-center space-x-2.5 ${pulseColorClass}`}>
+                  <div className={`p-2 bg-slate-950/60 border ${pulseBorderClass} rounded-xl animate-pulse`}>
+                    <Activity className="h-5 w-5" />
+                  </div>
+                  <div>
+                    <h3 className="text-sm font-black tracking-tight text-white uppercase">Cognitive Pulse History</h3>
+                    <p className="text-[9px] text-slate-400 uppercase tracking-wider font-semibold">Continuous High-Frequency Telemetry Feed</p>
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsPulseModalOpen(false)}
+                  className="p-1 hover:bg-slate-850 rounded-lg text-slate-450 hover:text-white transition-all cursor-pointer"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+
+              {/* Statistical snapshot row */}
+              <div className="grid grid-cols-3 gap-2 py-1">
+                <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-center">
+                  <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">Live Score</span>
+                  <strong className={`${pulseColorClass} text-sm font-black font-mono`}>
+                    {pulseHistory[pulseHistory.length - 1]?.intensity || 0}%
+                  </strong>
+                </div>
+                <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-center">
+                  <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">60s Average</span>
+                  <strong className="text-slate-200 text-sm font-black font-mono">
+                    {Math.round(pulseHistory.reduce((sum, item) => sum + item.intensity, 0) / pulseHistory.length)}%
+                  </strong>
+                </div>
+                <div className="bg-slate-950 p-2.5 rounded-xl border border-slate-800/80 text-center">
+                  <span className="text-[8px] text-slate-500 font-bold uppercase tracking-wider block mb-0.5">Peak Intensity</span>
+                  <strong className="text-indigo-400 text-sm font-black font-mono animate-pulse">
+                    {Math.max(...pulseHistory.map(item => item.intensity))}%
+                  </strong>
+                </div>
+              </div>
+
+              {/* Recharts Area Plot */}
+              <div className="bg-slate-950 rounded-xl p-3 border border-slate-850/80">
+                <div className="flex justify-between items-center mb-1 text-[9px] text-slate-400 font-mono">
+                  <span>Spectral Power Density</span>
+                  <span className="flex items-center gap-1">
+                    <span className={`h-1.5 w-1.5 rounded-full ${pingBgClass} animate-ping`}></span>
+                    <span>60s Live Window</span>
+                  </span>
+                </div>
+                
+                <div className="w-full h-36 mt-1">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <AreaChart
+                      data={pulseHistory}
+                      margin={{ top: 5, right: 0, left: -40, bottom: 0 }}
+                    >
+                      <defs>
+                        <linearGradient id="modalPulseGradient" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor={graphColor} stopOpacity={0.25}/>
+                          <stop offset="95%" stopColor={graphColor} stopOpacity={0}/>
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.15} />
+                      <XAxis 
+                        dataKey="time" 
+                        stroke="#64748b" 
+                        fontSize={8} 
+                        tickLine={false} 
+                        axisLine={false}
+                        interval={4} 
+                      />
+                      <YAxis 
+                        stroke="#64748b" 
+                        fontSize={8} 
+                        domain={[0, 100]} 
+                        tickLine={false} 
+                        axisLine={false}
+                        tickFormatter={(v) => `${v}%`}
+                      />
+                      <ReferenceLine 
+                        y={baselineY} 
+                        stroke={thresholdLineColor} 
+                        strokeWidth={1.5} 
+                        strokeDasharray="4 4" 
+                        label={{
+                          value: `Baseline: ${thresholdStatusText}`,
+                          fill: thresholdLineColor,
+                          position: 'top',
+                          fontSize: 8,
+                          fontWeight: 'bold',
+                        }} 
+                      />
+                      <Tooltip
+                        content={({ active, payload }) => {
+                          if (active && payload && payload.length) {
+                            const dataPoint = payload[0].payload;
+                            return (
+                              <div className="bg-slate-950 border border-slate-800 p-1.5 rounded-lg text-[9px] font-sans">
+                                <p className="font-bold text-slate-500">History: {dataPoint.time}</p>
+                                <p className={`font-bold ${pulseColorClass}`}>Value: {dataPoint.intensity}%</p>
+                              </div>
+                            );
+                          }
+                          return null;
+                        }}
+                      />
+                      <Area
+                        type="monotone"
+                        name="Pulse Intensity"
+                        dataKey="intensity"
+                        stroke={graphColor}
+                        strokeWidth={2}
+                        fillOpacity={1}
+                        fill="url(#modalPulseGradient)"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* High stress alerts cumulative report banner */}
+              {highStressCount > 0 && (
+                <div className="bg-red-500/10 border border-red-500/20 text-red-400 text-[10px] px-3 py-2 rounded-xl flex items-center justify-between font-medium">
+                  <div className="flex items-center gap-1.5 animate-pulse">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                      <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-red-500"></span>
+                    </span>
+                    <span>Session Stress Events: <strong className="text-white font-mono">{highStressCount}</strong></span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setHighStressCount(0)}
+                    className="text-[9px] uppercase font-bold text-slate-400 hover:text-white px-2 py-0.5 rounded bg-slate-950 border border-slate-800 transition-colors cursor-pointer"
+                  >
+                    Reset Count
+                  </button>
+                </div>
+              )}
+
+              {/* Feed Meta status and toggle */}
+              <div className="flex justify-between items-center text-[10px] bg-slate-950/60 p-2.5 rounded-lg border border-slate-800/80">
+                <div className="flex items-center gap-1.5 text-slate-400">
+                  <Clock className="h-3.5 w-3.5 text-slate-500" />
+                  <span>Epoch Rate: 0.5Hz • Wearable v2.1</span>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setIsStreamPaused(!isStreamPaused)}
+                  className={`flex items-center gap-1.5 px-2.5 py-1 rounded text-[9px] font-bold cursor-pointer border transition-colors ${
+                    isStreamPaused
+                      ? 'bg-emerald-950/40 border-emerald-800 text-emerald-400 hover:bg-emerald-900/30'
+                      : 'bg-slate-850 border-slate-800 hover:border-slate-700 text-slate-300'
+                  }`}
+                >
+                  {isStreamPaused ? (
+                    <>
+                      <Play className="h-2.5 w-2.5" />
+                      <span>Resume</span>
+                    </>
+                  ) : (
+                    <>
+                      <Pause className="h-2.5 w-2.5" />
+                      <span>Pause Feed</span>
+                    </>
+                  )}
+                </button>
+              </div>
+
+              <div className="pt-1 select-none">
+                <button
+                  type="button"
+                  onClick={() => setIsPulseModalOpen(false)}
+                  className="w-full bg-slate-850 hover:bg-slate-850 text-slate-200 border border-slate-800 text-xs font-bold py-2 rounded-xl transition-all cursor-pointer text-center"
+                >
+                  Dismiss Telemetry Feed
+                </button>
+              </div>
+            </motion.div>
+          </div>
+        )}
+
+        {/* PERSISTENT REAL-TIME COGNITIVE ALERTS TOAST */}
+        {pulseToast && (
+          <motion.div
+            initial={{ opacity: 0, y: 50, scale: 0.9, x: 50 }}
+            animate={{ opacity: 1, y: 0, scale: 1, x: 0 }}
+            exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            transition={{ type: "spring", stiffness: 350, damping: 25 }}
+            className={`fixed bottom-5 right-5 z-[210] max-w-sm w-full bg-slate-900 border ${
+              pulseToast.type === 'stress' ? 'border-red-900/40' : 'border-amber-900/40'
+            } rounded-2xl p-4 shadow-2xl overflow-hidden`}
+            id="pulse-status-toast-notification"
+          >
+            {/* Glowing ambient backing */}
+            <div className={`absolute top-0 right-0 -mr-8 -mt-8 h-20 w-20 ${
+              pulseToast.type === 'stress' ? 'bg-red-500/10' : 'bg-amber-500/10'
+            } rounded-full blur-xl pointer-events-none`} />
+
+            <div className="flex items-start justify-between">
+              <div className="flex items-center space-x-2.5">
+                <span className="relative flex h-2.5 w-2.5 shrink-0">
+                  <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${
+                    pulseToast.type === 'stress' ? 'bg-red-400' : 'bg-amber-400'
+                  } opacity-75`}></span>
+                  <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${
+                    pulseToast.type === 'stress' ? 'bg-red-500' : 'bg-amber-500'
+                  }`}></span>
+                </span>
+                <div>
+                  <h4 className={`text-[11px] font-black tracking-wider uppercase ${
+                    pulseToast.type === 'stress' ? 'text-red-400' : 'text-amber-400'
+                  }`}>
+                    {pulseToast.type === 'stress' ? 'Neural Stress Spike' : 'Sustained Focus Overload'}
+                  </h4>
+                  <p className="text-[9px] text-slate-500 font-mono">Telemetry Time: {pulseToast.timestamp}</p>
+                </div>
+              </div>
+              
+              <button
+                type="button"
+                onClick={() => setPulseToast(null)}
+                className="p-1 hover:bg-slate-850 rounded-lg text-slate-500 hover:text-white transition-all cursor-pointer"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            </div>
+
+            <div className="mt-2.5 select-text">
+              <p className="text-slate-300 text-xs leading-relaxed font-sans font-medium">
+                {pulseToast.message}
+              </p>
+            </div>
+
+            <div className="mt-3.5 pt-2.5 border-t border-slate-850 flex items-center justify-between gap-2.5">
+              <button
+                type="button"
+                onClick={() => {
+                  setIsPulseModalOpen(true);
+                  setPulseToast(null);
+                }}
+                className={`text-[10px] font-bold ${
+                  pulseToast.type === 'stress' ? 'bg-red-950/40 hover:bg-red-900/30 text-red-350' : 'bg-amber-950/40 hover:bg-amber-900/30 text-amber-350'
+                } px-2.5 py-1.5 rounded-lg border ${
+                  pulseToast.type === 'stress' ? 'border-red-900/40' : 'border-amber-900/40'
+                } transition-all cursor-pointer`}
+              >
+                See Pulse Details
+              </button>
+              <button
+                type="button"
+                onClick={() => setPulseToast(null)}
+                className="text-[9px] text-slate-450 hover:text-white font-semibold flex items-center gap-1 cursor-pointer"
+              >
+                Dismiss Alert
+              </button>
+            </div>
+          </motion.div>
+        )}
       </AnimatePresence>
+
+      {/* DEDICATED GEMINI WELLNESS COMPANION SIDEBAR */}
+      <WellnessCompanionSidebar cognitive={cognitive} biometric={biometric} />
 
     </div>
   );

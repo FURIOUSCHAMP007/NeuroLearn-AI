@@ -1,7 +1,23 @@
 import React, { useState, useEffect } from 'react';
-import { Users, LayoutGrid, AlertTriangle, CheckSquare, Sparkles, HelpCircle, Activity, Heart, ShieldAlert, Zap, Layers, Volume2 } from 'lucide-react';
+import { Users, LayoutGrid, AlertTriangle, CheckSquare, Sparkles, HelpCircle, Activity, Heart, ShieldAlert, Zap, Layers, Volume2, TrendingUp, Calendar, GitBranch, Network } from 'lucide-react';
 import { CognitiveState, BiometricState } from '../types';
 import { getWellnessCheckIns, WellnessData, getDistressSignals, DistressSignal } from '../lib/firebase';
+import CognitiveTrendAnalytics from './CognitiveTrendAnalytics';
+import GnnCollaborationLab from './GnnCollaborationLab';
+import GnnPredictiveBurnoutModeler from './GnnPredictiveBurnoutModeler';
+import {
+  ResponsiveContainer,
+  AreaChart,
+  Area,
+  XAxis,
+  YAxis,
+  CartesianGrid,
+  Tooltip,
+  Legend,
+  ReferenceLine,
+  BarChart,
+  Bar
+} from 'recharts';
 
 interface StudentData {
   id: string;
@@ -87,7 +103,95 @@ export default function TeacherDashboard({ cognitive, biometric }: TeacherDashbo
   const highStressCount = mappedStudents.filter(s => s.stress === 'High').length;
   const highFatigueCount = mappedStudents.filter(s => s.fatigue === 'High').length;
 
-  const averageAttentionIndex = Math.round((mappedStudents.filter(s => s.attention !== 'Low').length / totalStudents) * 100);
+  const averageAttentionIndex = Math.round((mappedStudents.filter(s => s.attention !== 'Low').length / totalStudents) * 105);
+
+  const [chartView, setChartView] = useState<'individual' | 'class' | 'comparison'>('individual');
+
+  // Compile historical trend data based on Firestore wellnessLogs and mock baselines for missing days
+  const getHistoricalTrendData = () => {
+    const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const data = [];
+    
+    // Create trend endpoints for the last 7 days
+    for (let i = 6; i >= 0; i--) {
+      const d = new Date();
+      d.setDate(d.getDate() - i);
+      const dayName = daysOfWeek[d.getDay()];
+      const dateStr = d.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' });
+      
+      // Look for a real matching wellness Check-in document from Firestore
+      const matchingLog = wellnessLogs.find(log => {
+        if (!log.createdAt) return false;
+        const logDate = new Date(log.createdAt);
+        return logDate.getDate() === d.getDate() && 
+               logDate.getMonth() === d.getMonth() && 
+               logDate.getFullYear() === d.getFullYear();
+      });
+
+      // Default baseline models for individual Alex Mercer
+      let alexStress = 35;
+      let alexCognitive = 72;
+      let sleepHrs = 7.0;
+
+      if (matchingLog) {
+        // Map real values loaded from Firestore!
+        // Mood: scale 1-5. Stress maps to: 5 -> 20, 4 -> 40, 3 -> 60, 2 -> 80, 1 -> 95
+        alexStress = (6 - matchingLog.mood) * 18 + 10;
+        
+        // Attention Snapshot maps to Cognitive Load score
+        if (matchingLog.attentionSnapshot === 'High') {
+          alexCognitive = 88;
+        } else if (matchingLog.attentionSnapshot === 'Moderate') {
+          alexCognitive = 65;
+        } else if (matchingLog.attentionSnapshot === 'Low') {
+          alexCognitive = 35;
+        }
+        sleepHrs = matchingLog.sleepHours;
+      } else {
+        // Safe, beautiful mock baseline offset for historical preview
+        const offset = (d.getDate() % 4);
+        alexStress = 30 + offset * 12;
+        alexCognitive = 78 - offset * 8;
+        sleepHrs = parseFloat((7.2 - (offset * 0.4)).toFixed(1));
+      }
+
+      // Class average represents smoothed values
+      const classAvgStress = Math.round(41 + (d.getDate() % 3) * 6);
+      const classAvgCognitive = Math.round(74 - (d.getDate() % 3) * 5);
+
+      // Distribute 12 class students according to average cognitive load
+      let highStrainCount = 2;
+      let optimalFlowCount = 8;
+      let lowFocusCount = 2;
+
+      if (classAvgCognitive > 74) {
+        highStrainCount = 3;
+        optimalFlowCount = 7;
+        lowFocusCount = 2;
+      } else if (classAvgCognitive < 70) {
+        highStrainCount = 1;
+        optimalFlowCount = 6;
+        lowFocusCount = 5;
+      }
+
+      data.push({
+        dayName: dayName,
+        dateStr: dateStr,
+        label: `${dayName} ${dateStr}`,
+        alexStress,
+        alexCognitive,
+        classAvgStress,
+        classAvgCognitive,
+        sleepHours: sleepHrs,
+        highStrainCount,
+        optimalFlowCount,
+        lowFocusCount
+      });
+    }
+    return data;
+  };
+
+  const trendData = getHistoricalTrendData();
 
   const [alerts, setAlerts] = useState([
     {
@@ -119,6 +223,9 @@ export default function TeacherDashboard({ cognitive, biometric }: TeacherDashbo
     }
   ]);
 
+  const [activeView, setActiveView] = useState<'monitor' | 'gnn'>('monitor');
+  const [gnnModeTab, setGnnModeTab] = useState<'collab_resonance' | 'predictive_burnout'>('predictive_burnout');
+
   const triggerClassroomFocusBreak = () => {
     setClassroomFocusTriggered(true);
     setTimeout(() => {
@@ -142,6 +249,42 @@ export default function TeacherDashboard({ cognitive, biometric }: TeacherDashbo
           <span className="text-xs bg-sky-950 font-semibold px-2 py-1 rounded">Activating...</span>
         </div>
       )}
+
+      {/* Dynamic Tab Switcher for Teacher Dashboard Modes */}
+      <div className="flex bg-slate-950 p-1.5 rounded-2xl border border-slate-800 justify-between items-center flex-wrap gap-3 my-2" id="teacher_dashboard_view_switcher">
+        <div className="flex items-center space-x-2">
+          <button
+            type="button"
+            onClick={() => setActiveView('monitor')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeView === 'monitor'
+                ? 'bg-indigo-600 text-white shadow-lg'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+            }`}
+          >
+            <LayoutGrid className="h-4 w-4" />
+            <span>Classroom Live Monitor</span>
+          </button>
+          
+          <button
+            type="button"
+            onClick={() => setActiveView('gnn')}
+            className={`flex items-center space-x-2 px-4 py-2 rounded-xl text-xs font-bold transition-all cursor-pointer ${
+              activeView === 'gnn'
+                ? 'bg-rose-600 text-white shadow-lg'
+                : 'text-slate-400 hover:text-slate-200 hover:bg-slate-900'
+            }`}
+          >
+            <GitBranch className="h-4 w-4 animate-pulse text-rose-400" />
+            <span>Collaborative GNN Network Lab</span>
+          </button>
+        </div>
+
+        <div className="flex items-center space-x-2 text-[10px] text-slate-400 mr-2">
+          <Network className="h-3.5 w-3.5 text-indigo-405 text-indigo-400 animate-spin" />
+          <span className="font-mono uppercase tracking-wider font-bold">Relational brainwave modeler : ONLINE</span>
+        </div>
+      </div>
 
       {/* Classroom KPIs Grid */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
@@ -194,7 +337,9 @@ export default function TeacherDashboard({ cognitive, biometric }: TeacherDashbo
         </div>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+      {activeView === 'monitor' ? (
+        <>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* HEATMAP GRID: Left Column (Span 7) */}
         <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
@@ -296,38 +441,312 @@ export default function TeacherDashboard({ cognitive, biometric }: TeacherDashbo
             </div>
           )}
 
-          {/* Cognitive Load Map & Daily Stress Hours Section using inline SVGs */}
+          {/* Cognitive Load Map & Daily Stress Hours Section using Recharts */}
           <div className="mt-6 border-t border-slate-850 pt-5">
-            <h4 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-3 flex items-center gap-1.5">
-              <Layers className="h-4.5 w-4.5 text-sky-400" />
-              Class-Wide Stress Trends Index (7-Day Aggregation)
-            </h4>
-            <div className="bg-slate-950 rounded-lg p-4 border border-slate-850">
-              <div className="flex justify-between items-center text-xs text-slate-400 mb-2">
-                <span>Sympathetic/Para-sympathetic Load Ratio</span>
-                <span className="text-[10px] text-sky-400">High load spikes during math exams</span>
+            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+              <div>
+                <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wide flex items-center gap-1.5">
+                  <Layers className="h-4.5 w-4.5 text-sky-450 text-sky-400" />
+                  Historical Cognitive & Stress Trends (7-Day Analytics)
+                </h4>
+                <p className="text-[11px] text-slate-400 mt-1">
+                  Bi-hemispheric signal synchronization and telemetry loaded directly from Firestore.
+                </p>
               </div>
-              {/* Beautiful Simulated Area Chart */}
-              <svg className="w-full h-24 text-sky-500 overflow-visible" viewBox="0 0 400 100">
-                <defs>
-                  <linearGradient id="stressGrad" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#0ea5e9" stopOpacity="0.3"/>
-                    <stop offset="100%" stopColor="#0ea5e9" stopOpacity="0.0"/>
-                  </linearGradient>
-                </defs>
-                <path d="M 0,90 Q 50,40 100,55 T 200,30 T 300,75 T 400,20 L 400,100 L 0,100 Z" fill="url(#stressGrad)" />
-                <path d="M 0,90 Q 50,40 100,55 T 200,30 T 300,75 T 400,20" fill="none" stroke="#0ea5e9" strokeWidth="2.5" />
-                <line x1="0" y1="50" x2="400" y2="50" stroke="#ef4444" strokeDasharray="3,3" strokeWidth="1" />
-                <text x="340" y="45" fill="#ef4444" fontSize="8" className="font-semibold">Burnout Threshold</text>
-                {/* Horizontal time line labels */}
-                <text x="5" y="98" fill="#64748b" fontSize="8">Mon</text>
-                <text x="70" y="98" fill="#64748b" fontSize="8">Tue</text>
-                <text x="140" y="98" fill="#64748b" fontSize="8">Wed</text>
-                <text x="210" y="98" fill="#64748b" fontSize="8">Thu</text>
-                <text x="280" y="98" fill="#64748b" fontSize="8">Fri</text>
-                <text x="350" y="98" fill="#64748b" fontSize="8">Sat/Sun</text>
-              </svg>
+
+              {/* Toggle controls */}
+              <div className="flex space-x-1 bg-slate-950 p-1 rounded-lg border border-slate-800 self-start sm:self-center">
+                <button
+                  type="button"
+                  onClick={() => setChartView('individual')}
+                  className={`px-2.5 py-1 rounded text-[10px] font-bold cursor-pointer transition-all ${
+                    chartView === 'individual' ? 'bg-indigo-600 text-slate-100' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Alex Mercer
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChartView('class')}
+                  className={`px-2.5 py-1 rounded text-[10px] font-bold cursor-pointer transition-all ${
+                    chartView === 'class' ? 'bg-indigo-600 text-slate-100' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Class Average
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setChartView('comparison')}
+                  className={`px-2.5 py-1 rounded text-[10px] font-bold cursor-pointer transition-all ${
+                    chartView === 'comparison' ? 'bg-indigo-600 text-slate-100' : 'text-slate-400 hover:text-slate-200'
+                  }`}
+                >
+                  Dual View
+                </button>
+              </div>
             </div>
+
+            <div className="bg-slate-950 rounded-xl p-4 border border-slate-800">
+              <div className="w-full h-64 mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <AreaChart
+                    data={trendData}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <defs>
+                      <linearGradient id="colorCognitive" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#6366f1" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#6366f1" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorStress" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3}/>
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorClassCog" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#0ea5e9" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#0ea5e9" stopOpacity={0}/>
+                      </linearGradient>
+                      <linearGradient id="colorClassStress" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#f43f5e" stopOpacity={0.2}/>
+                        <stop offset="95%" stopColor="#f43f5e" stopOpacity={0}/>
+                      </linearGradient>
+                    </defs>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.4} />
+                    <XAxis 
+                      dataKey="dayName" 
+                      stroke="#64748b" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      stroke="#64748b" 
+                      fontSize={10} 
+                      domain={[0, 100]} 
+                      tickLine={false} 
+                      axisLine={false}
+                      tickFormatter={(v) => `${v}%`}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const dataPoint = payload[0].payload;
+                          return (
+                            <div className="bg-slate-950 border border-slate-800 p-2.5 rounded-lg shadow-xl text-[11px] font-sans space-y-1">
+                              <p className="font-bold text-slate-350 border-b border-slate-900 pb-1 mb-1 flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-indigo-400" />
+                                {dataPoint.label}
+                              </p>
+                              {payload.map((item: any, idx: number) => (
+                                <div key={idx} className="flex items-center justify-between gap-4">
+                                  <span style={{ color: item.color }} className="font-semibold">
+                                    {item.name}:
+                                  </span>
+                                  <span className="font-mono font-bold text-slate-100">
+                                    {item.value}%
+                                  </span>
+                                </div>
+                              ))}
+                              {dataPoint.sleepHours !== undefined && (
+                                <p className="text-[10px] text-slate-500 pt-1 border-t border-slate-900 font-mono">
+                                  Rest cycle: {dataPoint.sleepHours} hrs slept
+                                </p>
+                              )}
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend 
+                      verticalAlign="top" 
+                      height={36} 
+                      iconSize={8}
+                      iconType="circle"
+                      wrapperStyle={{ fontSize: '10px', color: '#94a3b8' }}
+                    />
+                    
+                    {/* Add ReferenceLine at 80% to indicate Cognitive Burnout Threshold */}
+                    <ReferenceLine 
+                      y={80} 
+                      stroke="#ef4444" 
+                      strokeDasharray="3 3" 
+                      label={{ 
+                        value: 'Burnout Threshold', 
+                        fill: '#ef4444', 
+                        fontSize: 8, 
+                        position: 'top',
+                        fontWeight: '600'
+                      }} 
+                    />
+
+                    {/* Conditional rendering based on active tab view */}
+                    {(chartView === 'individual' || chartView === 'comparison') && (
+                      <Area
+                        type="monotone"
+                        name="Alex Mercer Cognitive Load"
+                        dataKey="alexCognitive"
+                        stroke="#6366f1"
+                        strokeWidth={2}
+                        fillOpacity={1}
+                        fill="url(#colorCognitive)"
+                      />
+                    )}
+                    {(chartView === 'individual' || chartView === 'comparison') && (
+                      <Area
+                        type="monotone"
+                        name="Alex Mercer Stress Level"
+                        dataKey="alexStress"
+                        stroke="#ef4444"
+                        strokeWidth={2}
+                        fillOpacity={1}
+                        fill="url(#colorStress)"
+                      />
+                    )}
+                    
+                    {(chartView === 'class' || chartView === 'comparison') && (
+                      <Area
+                        type="monotone"
+                        name="Class Cognitive Load"
+                        dataKey="classAvgCognitive"
+                        stroke="#0ea5e9"
+                        strokeWidth={1.5}
+                        strokeDasharray={chartView === 'comparison' ? '4 4' : undefined}
+                        fillOpacity={1}
+                        fill="url(#colorClassCog)"
+                      />
+                    )}
+                    {(chartView === 'class' || chartView === 'comparison') && (
+                      <Area
+                        type="monotone"
+                        name="Class Stress average"
+                        dataKey="classAvgStress"
+                        stroke="#f43f5e"
+                        strokeWidth={1.5}
+                        strokeDasharray={chartView === 'comparison' ? '4 4' : undefined}
+                        fillOpacity={1}
+                        fill="url(#colorClassStress)"
+                      />
+                    )}
+                  </AreaChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
+            {/* Secondary Recharts Bar Graph: Class-Wide Cognitive Load Distribution */}
+            <div className="bg-slate-950 rounded-xl p-4 border border-slate-800 mt-6 animate-fade-in">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
+                <div>
+                  <h4 className="text-xs font-bold text-slate-400 uppercase tracking-wider flex items-center gap-1.5">
+                    <TrendingUp className="h-4 w-4 text-emerald-400" />
+                    Class-Wide Cognitive Load Distribution (Past Week)
+                  </h4>
+                  <p className="text-[11px] text-slate-400 mt-1">
+                    Daily headcount breakdown of student clusters categorized by objective biometric cognitive load levels.
+                  </p>
+                </div>
+                {/* Visual Legend indicator */}
+                <div className="flex items-center space-x-2.5 text-[9px] text-slate-400">
+                  <span className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-sm bg-indigo-500"></span>
+                    <span>High Strain (&gt;80%)</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-sm bg-emerald-500"></span>
+                    <span>Optimal Flow (50-80%)</span>
+                  </span>
+                  <span className="flex items-center gap-1">
+                    <span className="h-1.5 w-1.5 rounded-sm bg-amber-500"></span>
+                    <span>Low Focus (&lt;50%)</span>
+                  </span>
+                </div>
+              </div>
+
+              <div className="w-full h-64 mt-2">
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart
+                    data={trendData}
+                    margin={{ top: 10, right: 10, left: -20, bottom: 0 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#1e293b" opacity={0.4} />
+                    <XAxis 
+                      dataKey="dayName" 
+                      stroke="#64748b" 
+                      fontSize={10} 
+                      tickLine={false} 
+                      axisLine={false}
+                    />
+                    <YAxis 
+                      stroke="#64748b" 
+                      fontSize={10} 
+                      domain={[0, 12]} 
+                      tickLine={false} 
+                      axisLine={false}
+                      tickFormatter={(v) => `${v} Std`}
+                    />
+                    <Tooltip
+                      content={({ active, payload }) => {
+                        if (active && payload && payload.length) {
+                          const dataPoint = payload[0].payload;
+                          return (
+                            <div className="bg-slate-950 border border-slate-800 p-2.5 rounded-lg shadow-xl text-[11px] font-sans space-y-1">
+                              <p className="font-bold text-slate-350 border-b border-slate-900 pb-1 mb-1 flex items-center gap-1">
+                                <Calendar className="h-3 w-3 text-indigo-450 text-indigo-400" />
+                                {dataPoint.label} Distribution
+                              </p>
+                              <div className="flex items-center justify-between gap-4">
+                                <span className="text-indigo-400 font-semibold">High Strain:</span>
+                                <span className="font-mono font-bold text-slate-100">{dataPoint.highStrainCount} students</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-4">
+                                <span className="text-emerald-400 font-semibold">Optimal Flow:</span>
+                                <span className="font-mono font-bold text-slate-100">{dataPoint.optimalFlowCount} students</span>
+                              </div>
+                              <div className="flex items-center justify-between gap-4">
+                                <span className="text-amber-400 font-semibold">Low Focus:</span>
+                                <span className="font-mono font-bold text-slate-100">{dataPoint.lowFocusCount} students</span>
+                              </div>
+                              <p className="text-[10px] text-slate-500 pt-1 border-t border-slate-900 font-mono text-center">
+                                Total Class size: 12 active
+                              </p>
+                            </div>
+                          );
+                        }
+                        return null;
+                      }}
+                    />
+                    <Legend 
+                      verticalAlign="top" 
+                      height={36} 
+                      iconSize={8}
+                      iconType="rect"
+                      wrapperStyle={{ fontSize: '10px', color: '#94a3b8' }}
+                    />
+                    
+                    <Bar 
+                      dataKey="highStrainCount" 
+                      name="High Strain" 
+                      stackId="classStack" 
+                      fill="#6366f1" 
+                    />
+                    <Bar 
+                      dataKey="optimalFlowCount" 
+                      name="Optimal Flow" 
+                      stackId="classStack" 
+                      fill="#10b981" 
+                    />
+                    <Bar 
+                      dataKey="lowFocusCount" 
+                      name="Low Focus" 
+                      stackId="classStack" 
+                      fill="#f59e0b" 
+                      radius={[4, 4, 0, 0]} 
+                    />
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+
           </div>
 
         </div>
@@ -523,6 +942,49 @@ export default function TeacherDashboard({ cognitive, biometric }: TeacherDashbo
         </div>
 
       </div>
+
+      {/* High-fidelity Live Session Analytics Panel */}
+      <div className="mt-8" id="teacher_historical_session_trend_panel">
+        <CognitiveTrendAnalytics />
+      </div>
+        </>
+      ) : (
+        <div className="space-y-6">
+          {/* Sublayout Toggler for GNN variants */}
+          <div className="flex bg-slate-950 p-1.5 rounded-2xl border border-slate-800 font-sans text-xs font-semibold justify-center items-center gap-2 max-w-lg mx-auto" id="teacher_gnn_mode_tab_switcher">
+            <button
+              type="button"
+              onClick={() => setGnnModeTab('predictive_burnout')}
+              className={`flex-1 py-1.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                gnnModeTab === 'predictive_burnout'
+                  ? 'bg-rose-600 text-white shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <GitBranch className="h-4 w-4 text-rose-400 animate-pulse" />
+              <span>Predictive Burnout Modeler</span>
+            </button>
+            <button
+              type="button"
+              onClick={() => setGnnModeTab('collab_resonance')}
+              className={`flex-1 py-1.5 px-4 rounded-xl flex items-center justify-center gap-2 transition-all cursor-pointer ${
+                gnnModeTab === 'collab_resonance'
+                  ? 'bg-indigo-600 text-white shadow-md font-bold'
+                  : 'text-slate-400 hover:text-slate-200'
+              }`}
+            >
+              <Network className="h-4 w-4 text-indigo-400" />
+              <span>Physical Resonance Lab</span>
+            </button>
+          </div>
+
+          {gnnModeTab === 'predictive_burnout' ? (
+            <GnnPredictiveBurnoutModeler />
+          ) : (
+            <GnnCollaborationLab />
+          )}
+        </div>
+      )}
 
     </div>
   );

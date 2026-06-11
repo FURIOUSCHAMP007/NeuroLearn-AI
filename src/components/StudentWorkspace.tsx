@@ -1,7 +1,13 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Sparkles, Brain, Heart, Activity, Compass, ShieldAlert, BookOpen, Send, User, ChevronRight, CheckCircle2, XCircle, ArrowRight, RefreshCw, Smile } from 'lucide-react';
+import { Sparkles, Brain, Heart, Activity, Compass, ShieldAlert, BookOpen, Send, User, ChevronRight, CheckCircle2, XCircle, ArrowRight, RefreshCw, Smile, Network, Target, GitBranch } from 'lucide-react';
 import { CognitiveState, BiometricState, Brainwaves, QuizQuestion } from '../types';
 import DailyWellnessCheckin from './DailyWellnessCheckin';
+import DailyAcademicGoal from './DailyAcademicGoal';
+import NeuroAcoustics from './NeuroAcoustics';
+import FocusGame from './FocusGame';
+import CognitiveMindmap from './CognitiveMindmap';
+import BiometricsCoherenceBreather from './BiometricsCoherenceBreather';
+import GnnLab from './GnnLab';
 
 interface StudentWorkspaceProps {
   cognitive: CognitiveState;
@@ -22,6 +28,7 @@ export default function StudentWorkspace({ cognitive, setCognitive, biometric, s
   // Simulator control variables
   const [activeTopic, setActiveTopic] = useState('Neuro-Plasticity & Learning');
   const [customTopic, setCustomTopic] = useState('');
+  const [activeSubTab, setActiveSubTab] = useState<'chats' | 'mindmap' | 'games' | 'coherence' | 'gnn'>('chats');
   
   // AI Tutor Chat State
   const [tutorMessage, setTutorMessage] = useState('');
@@ -261,9 +268,10 @@ export default function StudentWorkspace({ cognitive, setCognitive, biometric, s
   return (
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="student_workspace_tab">
       
-      {/* Daily Wellness Check-in block (Full-width col-span-12) */}
-      <div className="lg:col-span-12">
+      {/* Daily Wellness Check-in and Academic Goal Indicators (Full-width col-span-12) */}
+      <div className="lg:col-span-12 grid grid-cols-1 xl:grid-cols-2 gap-6">
         <DailyWellnessCheckin cognitive={cognitive} />
+        <DailyAcademicGoal />
       </div>
       
       {/* LEFT COLUMN: Simulated Hardware EEG / Sensor Controller Panels (Span 4) */}
@@ -479,6 +487,9 @@ export default function StudentWorkspace({ cognitive, setCognitive, biometric, s
           </div>
         </div>
 
+        {/* Dynamic Binaural Sound Therapy */}
+        <NeuroAcoustics cognitive={cognitive} />
+
       </div>
 
       {/* RIGHT COLUMN: Chat Interfaces: Tutor & Wellness Space or Adaptive Quiz (Span 8) */}
@@ -512,167 +523,233 @@ export default function StudentWorkspace({ cognitive, setCognitive, biometric, s
           </div>
         </div>
 
-        {/* Dual Interactive Agent Terminal */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-
-          {/* PART 1: Adaptive Tutor Interaction Panel */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl flex flex-col h-[520px] shadow-2xl overflow-hidden relative">
-            <div className="bg-slate-950 p-4 border-b border-slate-850 flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <div className="h-2.5 w-2.5 rounded-full bg-blue-500"></div>
-                <div>
-                  <h3 className="font-bold text-slate-100 text-sm">Gemini Cognitive Tutor</h3>
-                  <p className="text-[10px] text-slate-400">Generates content targeted at <span className="text-sky-300">{cognitive.attention} Attention</span> style</p>
-                </div>
-              </div>
-              <Sparkles className="h-4 w-4 text-blue-400 animate-pulse" />
-            </div>
-
-            {/* Chat Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-800">
-              {tutorChat.map((chat, idx) => (
-                <div key={idx} className={`flex flex-col ${chat.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`p-3 rounded-lg text-xs max-w-[90%] font-normal leading-relaxed ${
-                    chat.role === 'user' 
-                      ? 'bg-sky-600 text-slate-100 rounded-br-none' 
-                      : 'bg-slate-950 text-slate-300 rounded-bl-none border border-slate-850'
-                  }`}>
-                    {chat.role === 'user' ? (
-                      <div className="flex items-center space-x-1 mb-1">
-                        <User className="h-3 w-3 text-sky-200" />
-                        <span className="font-bold text-[10px] text-sky-200">Alex</span>
-                      </div>
-                    ) : (
-                      <div className="flex items-center justify-between mb-1 gap-2">
-                        <div className="flex items-center space-x-1">
-                          <Brain className="h-3 w-3 text-sky-400" />
-                          <span className="font-bold text-[10px] text-sky-400">NeuroLearn AI</span>
-                        </div>
-                        {chat.appliedState && (
-                          <span className="text-[9px] bg-sky-950 px-1 py-0.2 rounded text-sky-300 leading-none">
-                            Matched Profile: {chat.appliedState.attention} Focus
-                          </span>
-                        )}
-                      </div>
-                    )}
-                    <span className="whitespace-pre-wrap">{chat.text}</span>
-                  </div>
-                </div>
-              ))}
-              {isTutorLoading && (
-                <div className="flex items-center space-x-2 bg-slate-950 p-3 rounded-lg text-xs text-slate-400 animate-pulse border border-slate-850 w-3/4">
-                  <RefreshCw className="h-3 w-3 animate-spin text-sky-400" />
-                  <span>Gemini is adjusting instructional depth for you...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Chat Footer */}
-            <div className="p-3 bg-slate-950 border-t border-slate-850">
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  placeholder={`Ask questions on ${activeTopic}...`}
-                  value={tutorMessage}
-                  onChange={(e) => setTutorMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendTutor()}
-                  className="flex-1 bg-slate-900 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500 placeholder-slate-500"
-                />
-                <button
-                  onClick={handleSendTutor}
-                  className="bg-sky-600 hover:bg-sky-500 cursor-pointer disabled:bg-slate-700 disabled:text-slate-500 text-white rounded p-1.5 w-8 flex items-center justify-center transition-colors"
-                  disabled={!tutorMessage.trim() || isTutorLoading}
-                >
-                  <Send className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
-          {/* PART 2: Focus Recovery / Wellness Coach Panel */}
-          <div className="bg-slate-900 border border-slate-800 rounded-xl flex flex-col h-[520px] shadow-2xl overflow-hidden relative">
-            <div className="bg-slate-950 p-4 border-b border-slate-850 flex items-center justify-between">
-              <div className="flex items-center space-x-2.5">
-                <div className="h-2.5 w-2.5 rounded-full bg-emerald-500"></div>
-                <div>
-                  <h3 className="font-bold text-slate-100 text-sm">Emotional Wellness Coach</h3>
-                  <p className="text-[10px] text-slate-400">Bio-feedback loop responding to skin conduction and HRV</p>
-                </div>
-              </div>
-              <Smile className="h-4 w-4 text-emerald-400" />
-            </div>
-
-            {/* Chat Body */}
-            <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-800">
-              {coachChat.map((chat, idx) => (
-                <div key={idx} className={`flex flex-col ${chat.role === 'user' ? 'items-end' : 'items-start'}`}>
-                  <div className={`p-3 rounded-lg text-xs max-w-[90%] font-normal leading-relaxed ${
-                    chat.role === 'user' 
-                      ? 'bg-emerald-600 text-slate-100 rounded-br-none' 
-                      : 'bg-slate-950 text-slate-300 rounded-bl-none border border-slate-850'
-                  }`}>
-                    {chat.role === 'user' ? (
-                      <span className="font-bold text-[10px] text-emerald-200 block mb-1">Alex (Student)</span>
-                    ) : (
-                      <span className="font-bold text-[10px] text-emerald-400 block mb-1">Coach Athena</span>
-                    )}
-                    <span className="whitespace-pre-wrap">{chat.text}</span>
-                  </div>
-                </div>
-              ))}
-              {isCoachLoading && (
-                <div className="flex items-center space-x-2 bg-slate-950 p-3 rounded-lg text-xs text-slate-400 animate-pulse border border-slate-850 w-3/4">
-                  <RefreshCw className="h-3 w-3 animate-spin text-emerald-400" />
-                  <span>Athena is formulating a calming reset strategy...</span>
-                </div>
-              )}
-            </div>
-
-            {/* Chat Footer */}
-            <div className="p-3 bg-slate-950 border-t border-slate-850">
-              {/* Quick Biometrics Checkin Options */}
-              <div className="flex flex-wrap gap-1.5 mb-2.5">
-                <button 
-                  onClick={() => handleSendCoach("I feel high mental fatigue and my eyes burn.")}
-                  className="text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-1 rounded hover:bg-slate-800 text-left cursor-pointer transition-colors"
-                >
-                  💤 Mindful Break
-                </button>
-                <button 
-                  onClick={() => handleSendCoach("I can't focus on this quantum computing topic.")}
-                  className="text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-1 rounded hover:bg-slate-800 text-left cursor-pointer transition-colors"
-                >
-                  🌀 Posture Reset
-                </button>
-                <button 
-                  onClick={() => handleSendCoach("My heart is pounding and I feel exam anxiety.")}
-                  className="text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-1 rounded hover:bg-slate-800 text-left cursor-pointer transition-colors"
-                >
-                  ❤️ Exam Calming
-                </button>
-              </div>
-
-              <div className="flex space-x-2">
-                <input
-                  type="text"
-                  placeholder="Tell Athens Coach how you feel..."
-                  value={coachMessage}
-                  onChange={(e) => setCoachMessage(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && handleSendCoach()}
-                  className="flex-1 bg-slate-900 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 placeholder-slate-500"
-                />
-                <button
-                  onClick={() => handleSendCoach()}
-                  className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 cursor-pointer text-white rounded p-1.5 w-8 flex items-center justify-center transition-colors"
-                  disabled={!coachMessage.trim() || isCoachLoading}
-                >
-                  <Send className="h-3.5 w-3.5" />
-                </button>
-              </div>
-            </div>
-          </div>
-
+        {/* Premium Student Workspace Sub-Mode Tab Selector */}
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-2 bg-slate-950 p-1.5 rounded-2xl border border-slate-855" id="student_workspace_tab_bar_interactive">
+          {[
+            { id: 'chats', val: 'Study Assist Chats', icon: Sparkles },
+            { id: 'mindmap', val: 'Adaptive Mindmap', icon: Network },
+            { id: 'games', val: 'Focus Calibration', icon: Target },
+            { id: 'coherence', val: 'Coherence Breather', icon: Heart },
+            { id: 'gnn', val: 'GNN Cognitive Lab', icon: GitBranch }
+          ].map(tab => {
+            const Icon = tab.icon;
+            const isTabActive = activeSubTab === tab.id;
+            return (
+              <button
+                key={tab.id}
+                onClick={() => setActiveSubTab(tab.id as any)}
+                className={`flex items-center justify-center gap-1.5 py-2 px-2 rounded-xl text-[10.5px] font-bold uppercase transition-all cursor-pointer border ${
+                  isTabActive 
+                    ? 'bg-slate-900 border-indigo-500/40 text-indigo-400 font-extrabold shadow-md'
+                    : 'border-transparent text-slate-400 hover:text-slate-200 hover:bg-slate-900/45'
+                }`}
+              >
+                <Icon className={`h-4 w-4 shrink-0 ${isTabActive ? 'text-indigo-400' : 'text-slate-500'}`} />
+                <span>{tab.val}</span>
+              </button>
+            );
+          })}
         </div>
+
+        {/* Conditional Sub-Workspace Rendering */}
+        {activeSubTab === 'chats' && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6" id="dual_agent_chat_terminals">
+
+            {/* PART 1: Adaptive Tutor Interaction Panel */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl flex flex-col h-[520px] shadow-2xl overflow-hidden relative">
+              <div className="bg-slate-950 p-4 border-b border-slate-850 flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="h-2.5 w-2.5 rounded-full bg-blue-500"></div>
+                  <div>
+                    <h3 className="font-bold text-slate-100 text-sm">Gemini Cognitive Tutor</h3>
+                    <p className="text-[10px] text-slate-400">Generates content targeted at <span className="text-sky-300">{cognitive.attention} Attention</span> style</p>
+                  </div>
+                </div>
+                <Sparkles className="h-4 w-4 text-blue-400 animate-pulse" />
+              </div>
+
+              {/* Chat Body */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-800">
+                {tutorChat.map((chat, idx) => (
+                  <div key={idx} className={`flex flex-col ${chat.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div className={`p-3 rounded-lg text-xs max-w-[90%] font-normal leading-relaxed ${
+                      chat.role === 'user' 
+                        ? 'bg-sky-600 text-slate-100 rounded-br-none' 
+                        : 'bg-slate-950 text-slate-300 rounded-bl-none border border-slate-850'
+                    }`}>
+                      {chat.role === 'user' ? (
+                        <div className="flex items-center space-x-1 mb-1">
+                          <User className="h-3 w-3 text-sky-200" />
+                          <span className="font-bold text-[10px] text-sky-200">Alex</span>
+                        </div>
+                      ) : (
+                        <div className="flex items-center justify-between mb-1 gap-2">
+                          <div className="flex items-center space-x-1">
+                            <Brain className="h-3 w-3 text-sky-400" />
+                            <span className="font-bold text-[10px] text-sky-400">NeuroLearn AI</span>
+                          </div>
+                          {chat.appliedState && (
+                            <span className="text-[9px] bg-sky-950 px-1 py-0.2 rounded text-sky-300 leading-none">
+                              Matched Profile: {chat.appliedState.attention} Focus
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <span className="whitespace-pre-wrap">{chat.text}</span>
+                    </div>
+                  </div>
+                ))}
+                {isTutorLoading && (
+                  <div className="flex items-center space-x-2 bg-slate-950 p-3 rounded-lg text-xs text-slate-400 animate-pulse border border-slate-850 w-3/4">
+                    <RefreshCw className="h-3 w-3 animate-spin text-sky-400" />
+                    <span>Gemini is adjusting instructional depth for you...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Chat Footer */}
+              <div className="p-3 bg-slate-950 border-t border-slate-850">
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder={`Ask questions on ${activeTopic}...`}
+                    value={tutorMessage}
+                    onChange={(e) => setTutorMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendTutor()}
+                    className="flex-1 bg-slate-900 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-sky-500 placeholder-slate-500"
+                  />
+                  <button
+                    onClick={handleSendTutor}
+                    className="bg-sky-600 hover:bg-sky-500 cursor-pointer disabled:bg-slate-700 disabled:text-slate-500 text-white rounded p-1.5 w-8 flex items-center justify-center transition-colors"
+                    disabled={!tutorMessage.trim() || isTutorLoading}
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            {/* PART 2: Focus Recovery / Wellness Coach Panel */}
+            <div className="bg-slate-900 border border-slate-800 rounded-xl flex flex-col h-[520px] shadow-2xl overflow-hidden relative">
+              <div className="bg-slate-950 p-4 border-b border-slate-850 flex items-center justify-between">
+                <div className="flex items-center space-x-2.5">
+                  <div className="h-2.5 w-2.5 rounded-full bg-emerald-500"></div>
+                  <div>
+                    <h3 className="font-bold text-slate-100 text-sm">Emotional Wellness Coach</h3>
+                    <p className="text-[10px] text-slate-400">Bio-feedback loop responding to skin conduction and HRV</p>
+                  </div>
+                </div>
+                <Smile className="h-4 w-4 text-emerald-400" />
+              </div>
+
+              {/* Chat Body */}
+              <div className="flex-1 overflow-y-auto p-4 space-y-4 scrollbar-thin scrollbar-thumb-slate-800">
+                {coachChat.map((chat, idx) => (
+                  <div key={idx} className={`flex flex-col ${chat.role === 'user' ? 'items-end' : 'items-start'}`}>
+                    <div className={`p-3 rounded-lg text-xs max-w-[90%] font-normal leading-relaxed ${
+                      chat.role === 'user' 
+                        ? 'bg-emerald-600 text-slate-100 rounded-br-none' 
+                        : 'bg-slate-950 text-slate-300 rounded-bl-none border border-slate-850'
+                    }`}>
+                      {chat.role === 'user' ? (
+                        <span className="font-bold text-[10px] text-emerald-200 block mb-1">Alex (Student)</span>
+                      ) : (
+                        <span className="font-bold text-[10px] text-emerald-400 block mb-1">Coach Athena</span>
+                      )}
+                      <span className="whitespace-pre-wrap">{chat.text}</span>
+                    </div>
+                  </div>
+                ))}
+                {isCoachLoading && (
+                  <div className="flex items-center space-x-2 bg-slate-950 p-3 rounded-lg text-xs text-slate-450 animate-pulse border border-slate-850 w-3/4">
+                    <RefreshCw className="h-3 w-3 animate-spin text-emerald-400" />
+                    <span>Athena is formulating a calming reset strategy...</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Chat Footer */}
+              <div className="p-3 bg-slate-950 border-t border-slate-850">
+                {/* Quick Biometrics Checkin Options */}
+                <div className="flex flex-wrap gap-1.5 mb-2.5">
+                  <button 
+                    onClick={() => handleSendCoach("I feel high mental fatigue and my eyes burn.")}
+                    className="text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-1 rounded hover:bg-slate-800 text-left cursor-pointer transition-colors"
+                  >
+                    💤 Mindful Break
+                  </button>
+                  <button 
+                    onClick={() => handleSendCoach("I can't focus on this quantum computing topic.")}
+                    className="text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-1 rounded hover:bg-slate-800 text-left cursor-pointer transition-colors"
+                  >
+                    🌀 Posture Reset
+                  </button>
+                  <button 
+                    onClick={() => handleSendCoach("My heart is pounding and I feel exam anxiety.")}
+                    className="text-[10px] bg-slate-900 border border-slate-800 text-slate-300 px-2 py-1 rounded hover:bg-slate-800 text-left cursor-pointer transition-colors"
+                  >
+                    ❤️ Exam Calming
+                  </button>
+                </div>
+
+                <div className="flex space-x-2">
+                  <input
+                    type="text"
+                    placeholder="Tell Athens Coach how you feel..."
+                    value={coachMessage}
+                    onChange={(e) => setCoachMessage(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && handleSendCoach()}
+                    className="flex-1 bg-slate-900 border border-slate-850 rounded px-2.5 py-1.5 text-xs text-slate-100 focus:outline-none focus:border-emerald-500 placeholder-slate-500"
+                  />
+                  <button
+                    onClick={() => handleSendCoach()}
+                    className="bg-emerald-600 hover:bg-emerald-500 disabled:bg-slate-700 disabled:text-slate-500 cursor-pointer text-white rounded p-1.5 w-8 flex items-center justify-center transition-colors"
+                    disabled={!coachMessage.trim() || isCoachLoading}
+                  >
+                    <Send className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        )}
+
+        {activeSubTab === 'mindmap' && (
+          <CognitiveMindmap
+            cognitive={cognitive}
+            setCognitive={setCognitive}
+            biometric={biometric}
+            setBiometric={setBiometric}
+          />
+        )}
+
+        {activeSubTab === 'games' && (
+          <FocusGame
+            cognitive={cognitive}
+            setCognitive={setCognitive}
+            biometric={biometric}
+            setBiometric={setBiometric}
+          />
+        )}
+
+        {activeSubTab === 'coherence' && (
+          <BiometricsCoherenceBreather
+            cognitive={cognitive}
+            setCognitive={setCognitive}
+            biometric={biometric}
+            setBiometric={setBiometric}
+          />
+        )}
+
+        {activeSubTab === 'gnn' && (
+          <GnnLab
+            cognitive={cognitive}
+            setCognitive={setCognitive}
+            biometric={biometric}
+            setBiometric={setBiometric}
+          />
+        )}
 
         {/* Personalized Adaptive Quiz Engine */}
         <div className="bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-2xl">
