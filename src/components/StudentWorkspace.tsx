@@ -269,7 +269,7 @@ export default function StudentWorkspace({ cognitive, setCognitive, biometric, s
     <div className="grid grid-cols-1 lg:grid-cols-12 gap-6" id="student_workspace_tab">
       
       {/* Daily Wellness Check-in and Academic Goal Indicators (Full-width col-span-12) */}
-      <div className="lg:col-span-12 grid grid-cols-1 xl:grid-cols-2 gap-6">
+      <div className="lg:col-span-12 grid grid-cols-1 xl:grid-cols-3 gap-6">
         <DailyWellnessCheckin cognitive={cognitive} />
         <DailyAcademicGoal />
       </div>
@@ -482,6 +482,48 @@ export default function StudentWorkspace({ cognitive, setCognitive, biometric, s
                 <span className="text-slate-400 block text-[10px]">HRV Interval (Calm)</span>
                 <span className="text-emerald-400 font-mono font-bold text-sm">{biometric.hrv} ms</span>
                 <span className="text-[9px] text-slate-500 block">Goal: &gt; 60 ms</span>
+              </div>
+            </div>
+
+            {/* Heart Rate Baseline Deviation Card */}
+            <div className="bg-slate-955 p-3 rounded-lg border border-slate-850 space-y-2">
+              <div className="flex justify-between items-center text-[11px]">
+                <span className="font-bold text-pink-400 flex items-center gap-1.5">
+                  <Heart className="h-3.5 w-3.5 text-pink-500 animate-pulse" />
+                  Baseline Coherence Deviation
+                </span>
+                {Math.abs((biometric.movingAvg5s ?? biometric.heartRate) - (biometric.dailyBaseline ?? 72)) >= 8 ? (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-rose-950/60 text-rose-400 border border-rose-900/50 animate-pulse uppercase tracking-wider">
+                    ⚠️ Alert
+                  </span>
+                ) : (
+                  <span className="px-2 py-0.5 rounded-full text-[9px] font-mono font-black bg-emerald-950/60 text-emerald-450 border border-emerald-900/55 uppercase tracking-wider">
+                    ✨ Calm
+                  </span>
+                )}
+              </div>
+
+              <div className="grid grid-cols-2 gap-2 text-[10px] font-mono pt-1">
+                <div className="bg-slate-950 p-2 rounded border border-slate-900/80">
+                  <span className="text-slate-500 block text-[8px] uppercase">5s HR Avg</span>
+                  <strong className="text-pink-400 text-xs">{biometric.movingAvg5s ?? biometric.heartRate} BPM</strong>
+                </div>
+                <div className="bg-slate-950 p-2 rounded border border-slate-900/80">
+                  <span className="text-slate-500 block text-[8px] uppercase">Rolling Baseline</span>
+                  <strong className="text-slate-300 text-xs">{(biometric.dailyBaseline ?? 72.0).toFixed(1)} BPM</strong>
+                </div>
+              </div>
+
+              <div className="text-[10px] flex justify-between items-center pt-1.5 border-t border-slate-900/80">
+                <span className="text-slate-400 font-sans">Baseline Offset:</span>
+                <span className={`font-mono font-extrabold ${
+                  Math.abs((biometric.movingAvg5s ?? biometric.heartRate) - (biometric.dailyBaseline ?? 72)) >= 8
+                    ? 'text-rose-450'
+                    : 'text-emerald-400'
+                }`}>
+                  {((biometric.movingAvg5s ?? biometric.heartRate) - (biometric.dailyBaseline ?? 72)) > 0 ? '+' : ''}
+                  {((biometric.movingAvg5s ?? biometric.heartRate) - (biometric.dailyBaseline ?? 72)).toFixed(1)} BPM
+                </span>
               </div>
             </div>
           </div>

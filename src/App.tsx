@@ -58,8 +58,48 @@ export default function App() {
     gsr: 2.4,
     headMovement: 'Stable',
     heartRate: 70,
-    temperature: 36.60
+    temperature: 36.60,
+    movingAvg5s: 70,
+    dailyBaseline: 72.00
   });
+
+  // 5-second moving average queues and rolling baseline calculation effect
+  const [hrWindow, setHrWindow] = useState<{ value: number; time: number }[]>([]);
+
+  useEffect(() => {
+    const handleBiometricsUpdate = setInterval(() => {
+      const now = Date.now();
+      const currentHr = biometric.heartRate;
+
+      setHrWindow(prev => {
+        const threshold = now - 5000;
+        const valid = prev.filter(item => item.time > threshold);
+        const next = [...valid, { value: currentHr, time: now }];
+        
+        // Compute 5-second moving average
+        const avg = Math.round(next.reduce((sum, item) => sum + item.value, 0) / next.length);
+        
+        // Initialize or update the daily rolling baseline slowly (exponential decay factor alpha = 0.05)
+        setBiometric(current => {
+          const currentBaseline = current.dailyBaseline ?? 72;
+          const nextBaseline = Number((currentBaseline * 0.95 + currentHr * 0.05).toFixed(2));
+          
+          if (current.movingAvg5s === avg && current.dailyBaseline === nextBaseline) {
+            return current;
+          }
+          return {
+            ...current,
+            movingAvg5s: avg,
+            dailyBaseline: nextBaseline
+          };
+        });
+
+        return next;
+      });
+    }, 1000);
+
+    return () => clearInterval(handleBiometricsUpdate);
+  }, [biometric.heartRate]);
 
   const [highStressCount, setHighStressCount] = useState(0);
 
@@ -969,10 +1009,60 @@ export default function App() {
                         content={({ active, payload }) => {
                           if (active && payload && payload.length) {
                             const dataPoint = payload[0].payload;
+                            
+                            // Find the index of the current data point in the 60s history window
+                            const idx = pulseHistory.findIndex(item => item.time === dataPoint.time);
+                            let tenSecondAvg = dataPoint.intensity;
+                            
+                            if (idx !== -1) {
+                              // Each point represents a 2-second interval, so 10 seconds of data is the last 5 points.
+                              const startIdx = Math.max(0, idx - 4);
+                              const subset = pulseHistory.slice(startIdx, idx + 1);
+                              const sum = subset.reduce((acc, curr) => acc + curr.intensity, 0);
+                              tenSecondAvg = Math.round((sum / subset.length) * 10) / 10;
+                            }
+                            
+                            const diff = dataPoint.intensity - tenSecondAvg;
+                            let trendArrow = "→";
+                            let trendColor = "text-slate-400 bg-slate-950/80 border-slate-800";
+                            let trendText = "Stable";
+                            
+                            if (diff > 0.1) {
+                              trendArrow = "↑";
+                              trendColor = "text-rose-450 text-red-400 bg-red-950/20 border-red-900/30";
+                              trendText = "Rising Stress";
+                            } else if (diff < -0.1) {
+                              trendArrow = "↓";
+                              trendColor = "text-emerald-400 bg-emerald-950/20 border-emerald-900/30";
+                              trendText = "Calming Down";
+                            }
+                            
                             return (
-                              <div className="bg-slate-950 border border-slate-800 p-1.5 rounded-lg text-[9px] font-sans">
-                                <p className="font-bold text-slate-500">History: {dataPoint.time}</p>
-                                <p className={`font-bold ${pulseColorClass}`}>Value: {dataPoint.intensity}%</p>
+                              <div className="bg-slate-950 border border-slate-800/80 p-2 rounded-xl text-[10px] font-sans shadow-xl min-w-[150px] space-y-1.5 backdrop-blur-md">
+                                <div className="flex justify-between items-center text-slate-450 border-b border-slate-900 pb-1 flex-wrap gap-1">
+                                  <span className="font-semibold text-slate-400">Time: {dataPoint.time}</span>
+                                  <span className="text-[8px] px-1 py-0.2 bg-slate-900 rounded-md font-mono text-slate-500">2s Interval</span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-slate-500">Last 2s Data:</span>
+                                  <span className={`font-black font-mono ${pulseColorClass}`}>
+                                    {dataPoint.intensity}%
+                                  </span>
+                                </div>
+                                <div className="flex justify-between items-center">
+                                  <span className="text-slate-505 text-slate-500">10s Average:</span>
+                                  <span className="font-black font-mono text-slate-300">
+                                    {tenSecondAvg}%
+                                  </span>
+                                </div>
+                                <div className={`flex items-center justify-between border border-transparent p-1 px-1.5 rounded-lg text-[9px] font-bold ${trendColor}`}>
+                                  <span>Trend:</span>
+                                  <span className="flex items-center gap-1">
+                                    <span className="text-xs font-black">{trendArrow}</span>
+                                    <span>{trendText}</span>
+                                    <span className="font-mono text-[8px]">({diff > 0 ? "+" : ""}{diff.toFixed(1)}%)</span>
+                                  </span>
+                                </div>
                               </div>
                             );
                           }

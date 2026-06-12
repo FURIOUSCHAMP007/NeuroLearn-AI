@@ -63,7 +63,7 @@ export default function HomePage({ onNavigate }: HomePageProps) {
           <div className="flex flex-wrap gap-2.5 pt-1">
             <button
               onClick={() => onNavigate('student')}
-              className="bg-indigo-600 hover:bg-indigo-505 bg-indigo-700 hover:bg-indigo-650 text-slate-100 font-bold text-xs px-5 py-2.5 rounded-lg duration-150 cursor-pointer flex items-center gap-1.5 shadow-md shadow-indigo-600/10"
+              className="bg-indigo-600 hover:bg-indigo-500 text-slate-100 font-bold text-xs px-5 py-2.5 rounded-lg duration-150 cursor-pointer flex items-center gap-1.5 shadow-md shadow-indigo-600/10"
             >
               Launch Student Workspace
               <ChevronRight className="h-3.5 w-3.5" />

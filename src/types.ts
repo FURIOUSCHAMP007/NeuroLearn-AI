@@ -10,6 +10,8 @@ export interface BiometricState {
   headMovement: 'Stable' | 'Moderate' | 'High' | 'Erratic';
   heartRate: number; // bpm
   temperature: number; // °C
+  movingAvg5s?: number; // 5-second moving average for heart rate
+  dailyBaseline?: number; // Daily rolling baseline for heart rate
 }
 
 export interface Brainwaves {

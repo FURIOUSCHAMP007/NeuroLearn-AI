@@ -130,10 +130,10 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
   };
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-12 gap-6" id="daily_wellness_container">
+    <>
       
-      {/* Dynamic Submit Form Column (Span 7) */}
-      <div className="md:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-2xl relative overflow-hidden flex flex-col justify-between" id="wellness_submit_card">
+      {/* Dynamic Submit Form Column */}
+      <div className="xl:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-2xl relative overflow-hidden flex flex-col justify-between" id="wellness_submit_card">
         <div>
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center space-x-2.5">
@@ -141,14 +141,9 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
                 <Heart className="h-5 w-5 animate-pulse" />
               </div>
               <div>
-                <h3 className="font-bold text-slate-100 text-base">New Daily Wellness Check-in</h3>
-                <p className="text-xs text-slate-400">Self-report your somatic metrics to customize adaptive neural-tutor intensity.</p>
+                <h3 className="font-bold text-slate-100 text-sm">New Daily Wellness Check-in</h3>
+                <p className="text-[10.5px] text-slate-400">Self-report your somatic metrics to customize tutorial intensity.</p>
               </div>
-            </div>
-            
-            <div className="text-[10px] bg-slate-950 border border-slate-800 px-2.5 py-1 rounded text-slate-400 flex items-center space-x-1">
-              <Database className="h-3 w-3 text-sky-400" />
-              <span>{isFirebaseAvailable ? 'Cloud Firestore Active' : 'Offline Engine Active'}</span>
             </div>
           </div>
 
@@ -172,10 +167,10 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
             
             {/* 1. Mood Selection Selector */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2">
+              <label className="block text-[10.5px] font-bold text-slate-400 uppercase tracking-wider mb-2">
                 1. What is your emotional mood rating today?
               </label>
-              <div className="grid grid-cols-5 gap-2">
+              <div className="grid grid-cols-5 gap-1.5">
                 {moodOptions.map((opt) => {
                   const isSelected = selectedMood === opt.rating;
                   return (
@@ -183,14 +178,14 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
                       key={opt.rating}
                       type="button"
                       onClick={() => setSelectedMood(opt.rating)}
-                      className={`p-3 rounded-xl border transition-all duration-200 cursor-pointer flex flex-col items-center justify-center space-y-1 text-center scale-95 hover:scale-100 ${
+                      className={`p-1.5 py-3 rounded-xl border transition-all duration-205 cursor-pointer flex flex-col items-center justify-center space-y-1 text-center ${
                         isSelected 
-                          ? opt.color + ' ring-2 ring-offset-2 ring-indigo-500/40 scale-100'
-                          : 'bg-slate-950 border-slate-850 hover:border-slate-700 text-slate-400'
+                          ? opt.color + ' ring-2 ring-indigo-500/40 scale-100 shadow-md'
+                          : 'bg-slate-950 border-slate-850 hover:border-slate-700 text-slate-400 hover:scale-100'
                       }`}
                     >
                       <span className="text-xl">{opt.emoji}</span>
-                      <span className="text-[10px] font-bold truncate w-full">{opt.label}</span>
+                      <span className="text-[9px] font-bold leading-tight whitespace-normal break-words w-full px-0.5">{opt.label}</span>
                     </button>
                   );
                 })}
@@ -198,15 +193,15 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
             </div>
 
             {/* 2. Sleep Metrics Slider & badges Row */}
-            <div className="grid grid-cols-1 sm:grid-cols-12 gap-4 pt-1">
+            <div className="space-y-4 pt-1">
               
               {/* Sleep Hours Slider */}
-              <div className="sm:col-span-7">
+              <div>
                 <div className="flex justify-between items-center text-xs mb-2">
-                  <span className="text-slate-300 font-semibold uppercase tracking-wider flex items-center">
+                  <span className="text-[10.5px] text-slate-300 font-bold uppercase tracking-wider flex items-center">
                     <Clock className="h-3.5 w-3.5 text-sky-400 mr-1" /> 2. Sleep Duration
                   </span>
-                  <span className="font-mono bg-sky-950 text-sky-400 font-bold px-2 py-0.5 rounded border border-sky-900">
+                  <span className="font-mono bg-sky-950/80 text-sky-305 text-sky-400 font-bold px-2 py-0.5 rounded border border-sky-900 text-[11px]">
                     {sleepHours.toFixed(1)} Hours
                   </span>
                 </div>
@@ -220,7 +215,7 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
                     onChange={(e) => setSleepHours(parseFloat(e.target.value))}
                     className="w-full accent-indigo-500 bg-slate-800 rounded-lg appearance-none h-1.5 cursor-pointer"
                   />
-                  <div className="flex justify-between text-[9px] text-slate-500 mt-2 font-mono">
+                  <div className="flex justify-between text-[9px] text-slate-400 mt-2 font-mono">
                     <span>4 hrs (Low)</span>
                     <span>8 hrs (Optimal)</span>
                     <span>12 hrs (Oversleep)</span>
@@ -229,9 +224,9 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
               </div>
 
               {/* Sleep Quality Options Selection */}
-              <div className="sm:col-span-5">
-                <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center">
-                  <Moon className="h-3.5 w-3.5 text-indigo-400 mr-1" /> 3. Sleep Quality
+              <div>
+                <label className="block text-[10.5px] font-bold text-slate-350 uppercase tracking-wider mb-2 flex items-center">
+                  <Moon className="h-3.5 w-3.5 text-indigo-455 mr-1" /> 3. Sleep Quality
                 </label>
                 <div className="grid grid-cols-2 gap-1.5">
                   {sleepQualityOptions.map((qual) => {
@@ -241,7 +236,7 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
                         key={qual}
                         type="button"
                         onClick={() => setSelectedSleepQuality(qual)}
-                        className={`py-2 px-1.5 text-[9px] font-bold rounded-lg border transition-all text-center cursor-pointer truncate ${
+                        className={`py-2 px-1.5 text-[9.5px] font-bold rounded-lg border transition-all text-center cursor-pointer leading-tight whitespace-normal break-words flex items-center justify-center min-h-[35px] ${
                           isSelected
                             ? 'bg-indigo-950 text-indigo-400 border-indigo-800 shadow-sm'
                             : 'bg-slate-950 text-slate-400 border-slate-850 hover:bg-slate-850'
@@ -258,38 +253,38 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
 
             {/* 3. Personal Notes Text Box */}
             <div>
-              <label className="block text-xs font-semibold text-slate-300 uppercase tracking-wider mb-2 flex items-center">
+              <label className="block text-[10.5px] font-bold text-slate-350 uppercase tracking-wider mb-2 flex items-center">
                 <BookOpen className="h-3.5 w-3.5 text-purple-400 mr-1" /> 4. Feeling Diary / Notes (Optional)
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
-                placeholder="Log any additional context, study anxiety triggers or physical feeling details..."
+                placeholder="Log any study anxiety triggers or feeling details..."
                 maxLength={400}
-                className="w-full h-20 bg-slate-950 text-xs text-slate-200 border border-slate-850 rounded-xl p-3 focus:outline-none focus:border-indigo-500 placeholder-slate-600 transition-colors"
+                className="w-full h-16 bg-slate-950 text-xs text-slate-200 border border-slate-850 rounded-xl p-3 focus:outline-none focus:border-indigo-500 placeholder-slate-650 transition-colors resize-none leading-relaxed"
               />
             </div>
 
             {/* Simulated Live System Info Tag */}
-            <div className="p-2.5 bg-slate-950 border border-slate-850 rounded-lg flex justify-between items-center text-[10px] text-slate-500">
+            <div className="p-2.5 bg-slate-955 border border-slate-850 rounded-lg flex justify-between items-center text-[10px] text-slate-400">
               <span>Somatic State Snapshot:</span>
               <span className="flex items-center space-x-1.5">
                 <span className="h-1.5 w-1.5 bg-sky-500 rounded-full animate-pulse" />
-                <span className="text-sky-400 font-bold">EEG Attention: {cognitive.attention}</span>
+                <span className="text-sky-305 font-bold">EEG Attention: {cognitive.attention}</span>
               </span>
             </div>
 
           </form>
         </div>
 
-        <div className="pt-4 border-t border-slate-850 mt-4 flex items-center justify-between">
-          <p className="text-[10px] text-slate-500 max-w-sm">
-            Submitting syncs instantly to Firestore and feeds real-time data back to the Parent & Teacher dashboards for adaptive support.
+        <div className="pt-4 border-t border-slate-850 mt-4 flex flex-col gap-3">
+          <p className="text-[10px] text-slate-400 leading-normal">
+            Logs instantly to secure database for real-time parent & teacher insights.
           </p>
           <button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="px-5 py-2.5 bg-gradient-to-r from-pink-600 to-indigo-600 hover:from-pink-500 hover:to-indigo-500 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-pink-950/20 flex items-center space-x-2 shrink-0 cursor-pointer disabled:opacity-40"
+            className="w-full py-2.5 bg-gradient-to-r from-pink-650 to-indigo-650 hover:from-pink-550 hover:to-indigo-550 text-white text-xs font-bold rounded-xl transition-all shadow-md shadow-pink-950/20 flex items-center justify-center space-x-2 shrink-0 cursor-pointer disabled:opacity-40"
           >
             {isSubmitting ? (
               <>
@@ -306,8 +301,8 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
         </div>
       </div>
 
-      {/* Historic Logs Column (Span 5) */}
-      <div className="md:col-span-5 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-2xl flex flex-col" id="wellness_history_card">
+      {/* Historic Logs Column */}
+      <div className="xl:col-span-1 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-2xl flex flex-col" id="wellness_history_card">
         <div className="flex justify-between items-center border-b border-slate-850 pb-3 mb-4">
           <h4 className="text-sm font-bold text-slate-200 flex items-center space-x-1.5">
             <History className="h-4 w-4 text-sky-400" />
@@ -319,9 +314,9 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
         </div>
 
         {/* List scroll container */}
-        <div className="flex-1 overflow-y-auto max-h-[360px] space-y-3 pr-1.5 scrollbar-thin scrollbar-thumb-slate-800">
+        <div className="flex-1 overflow-y-auto max-h-[365px] space-y-3 pr-1.5 scrollbar-thin scrollbar-thumb-slate-800">
           {isLoadingHistory ? (
-            <div className="text-center py-10 text-xs text-slate-500 animate-pulse">
+            <div className="text-center py-10 text-xs text-slate-400 animate-pulse">
               <p>Analyzing Firestore historical logs...</p>
             </div>
           ) : history.length > 0 ? (
@@ -337,11 +332,11 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
                 >
                   <div className="flex justify-between items-start mb-2">
                     <div className="flex items-center space-x-1.5">
-                      <span className={`text-[10px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${getMoodColor(log.mood)}`}>
+                      <span className={`text-[9.5px] px-2 py-0.5 rounded-full font-bold uppercase tracking-wider ${getMoodColor(log.mood)}`}>
                         {log.moodLabel} (Rating: {log.mood})
                       </span>
                     </div>
-                    <span className="text-[9px] text-slate-500 font-mono">{dateString}</span>
+                    <span className="text-[9px] text-slate-400 font-mono">{dateString}</span>
                   </div>
 
                   <div className="grid grid-cols-2 gap-2 text-[10px] mb-2 text-slate-300">
@@ -356,13 +351,13 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
                   </div>
 
                   {log.notes && (
-                    <p className="text-[10px] text-slate-400 italic bg-slate-900/30 p-2 rounded border border-slate-850 leading-relaxed font-normal whitespace-pre-wrap">
+                    <p className="text-[10px] text-slate-300 bg-slate-900/30 p-2 rounded border border-slate-850 leading-relaxed font-normal whitespace-pre-wrap">
                       "{log.notes}"
                     </p>
                   )}
 
                   {log.attentionSnapshot && (
-                    <div className="mt-2 text-[9px] text-slate-500 flex justify-between items-center font-mono">
+                    <div className="mt-2 text-[9px] text-slate-450 flex justify-between items-center font-mono">
                       <span>Wearer Bio Snapshot:</span>
                       <span className="text-yellow-500">EEG Attention: {log.attentionSnapshot}</span>
                     </div>
@@ -371,9 +366,9 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
               );
             })
           ) : (
-            <div className="text-center py-10 bg-slate-950 rounded-lg border border-slate-850 text-slate-500 text-xs">
+            <div className="text-center py-10 bg-slate-950 rounded-lg border border-slate-850 text-slate-400 text-xs">
               <p>No previous logs filed yet.</p>
-              <p className="text-[10px] text-slate-600 mt-1">Submit the check-in form to start tracking your daily bio-history!</p>
+              <p className="text-[10px] text-slate-500 mt-1">Submit the check-in form to start tracking your daily bio-history!</p>
             </div>
           )}
         </div>
@@ -381,7 +376,7 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
         {/* Minimal sleep trend visualization */}
         {history.length > 0 && (
           <div className="mt-4 pt-3 border-t border-slate-850 text-[10px]">
-            <div className="flex justify-between items-center text-slate-400 mb-1">
+            <div className="flex justify-between items-center text-slate-300 mb-1">
               <span>Sleep Goal Progress (8h):</span>
               <span className="font-bold text-sky-400">
                 {Math.round((history.reduce((acc, curr) => acc + curr.sleepHours, 0) / history.length) / 8.0 * 100)}% Avg
@@ -398,6 +393,6 @@ export default function DailyWellnessCheckin({ cognitive }: DailyWellnessCheckin
 
       </div>
 
-    </div>
+    </>
   );
 }

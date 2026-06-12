@@ -36,21 +36,78 @@ interface TeacherDashboardProps {
 }
 
 export default function TeacherDashboard({ cognitive, biometric }: TeacherDashboardProps) {
-  // Mock student roster
-  const [students, setStudents] = useState<StudentData[]>([
-    { id: '1', name: 'Alex Mercer', attention: 'High', stress: 'Low', fatigue: 'Low', hrv: 85, gsr: 3.2, posture: 'Proper' },
-    { id: '2', name: 'Jack Peterson', attention: 'Low', stress: 'High', fatigue: 'High', hrv: 32, gsr: 9.8, posture: 'Slouched' },
-    { id: '3', name: 'Sophia Lin', attention: 'High', stress: 'Moderate', fatigue: 'Low', hrv: 62, gsr: 5.4, posture: 'Proper' },
-    { id: '4', name: 'Ethan Hunt', attention: 'Moderate', stress: 'Low', fatigue: 'Moderate', hrv: 72, gsr: 4.1, posture: 'Moving' },
-    { id: '5', name: 'Chloe Fraser', attention: 'High', stress: 'Low', fatigue: 'Low', hrv: 94, gsr: 2.8, posture: 'Proper' },
-    { id: '6', name: 'Zack Ward', attention: 'Low', stress: 'Low', fatigue: 'High', hrv: 69, gsr: 3.0, posture: 'Micro-naps' },
-    { id: '7', name: 'Abby Williams', attention: 'Moderate', stress: 'High', fatigue: 'Moderate', hrv: 44, gsr: 8.5, posture: 'Forward lean' },
-    { id: '8', name: 'Lucas Scott', attention: 'High', stress: 'Low', fatigue: 'Low', hrv: 88, gsr: 3.3, posture: 'Proper' },
-    { id: '9', name: 'Mia Wong', attention: 'High', stress: 'Moderate', fatigue: 'Low', hrv: 55, gsr: 5.8, posture: 'Slouched' },
-    { id: '10', name: 'Noah Miller', attention: 'Low', stress: 'Moderate', fatigue: 'High', hrv: 48, gsr: 6.2, posture: 'Restless' },
-    { id: '11', name: 'Emma Davis', attention: 'Moderate', stress: 'Low', fatigue: 'Low', hrv: 79, gsr: 3.9, posture: 'Proper' },
-    { id: '12', name: 'Oliver Taylor', attention: 'High', stress: 'Low', fatigue: 'Low', hrv: 90, gsr: 2.9, posture: 'Proper' }
-  ]);
+  // Mock student roster of exactly 60 students
+  const [students, setStudents] = useState<StudentData[]>(() => {
+    const baseList: StudentData[] = [
+      { id: '1', name: 'Alex Mercer', attention: 'High', stress: 'Low', fatigue: 'Low', hrv: 85, gsr: 3.2, posture: 'Proper' },
+      { id: '2', name: 'Jack Peterson', attention: 'Low', stress: 'High', fatigue: 'High', hrv: 32, gsr: 9.8, posture: 'Slouched' },
+      { id: '3', name: 'Sophia Lin', attention: 'High', stress: 'Moderate', fatigue: 'Low', hrv: 62, gsr: 5.4, posture: 'Proper' },
+      { id: '4', name: 'Ethan Hunt', attention: 'Moderate', stress: 'Low', fatigue: 'Moderate', hrv: 72, gsr: 4.1, posture: 'Moving' },
+      { id: '5', name: 'Chloe Fraser', attention: 'High', stress: 'Low', fatigue: 'Low', hrv: 94, gsr: 2.8, posture: 'Proper' },
+      { id: '6', name: 'Zack Ward', attention: 'Low', stress: 'Low', fatigue: 'High', hrv: 69, gsr: 3.0, posture: 'Micro-naps' },
+      { id: '7', name: 'Abby Williams', attention: 'Moderate', stress: 'High', fatigue: 'Moderate', hrv: 44, gsr: 8.5, posture: 'Forward lean' },
+      { id: '8', name: 'Lucas Scott', attention: 'High', stress: 'Low', fatigue: 'Low', hrv: 88, gsr: 3.3, posture: 'Proper' },
+      { id: '9', name: 'Mia Wong', attention: 'High', stress: 'Moderate', fatigue: 'Low', hrv: 55, gsr: 5.8, posture: 'Slouched' },
+      { id: '10', name: 'Noah Miller', attention: 'Low', stress: 'Moderate', fatigue: 'High', hrv: 48, gsr: 6.2, posture: 'Restless' },
+      { id: '11', name: 'Emma Davis', attention: 'Moderate', stress: 'Low', fatigue: 'Low', hrv: 79, gsr: 3.9, posture: 'Proper' },
+      { id: '12', name: 'Oliver Taylor', attention: 'High', stress: 'Low', fatigue: 'Low', hrv: 90, gsr: 2.9, posture: 'Proper' }
+    ];
+
+    const firstNames = [
+      'John', 'Robert', 'William', 'James', 'David', 'Joseph', 'Charles', 'Thomas', 'Daniel', 'Matthew',
+      'Ava', 'Isabella', 'Sophia', 'Charlotte', 'Amelia', 'Mia', 'Harper', 'Evelyn', 'Abigail', 'Emily',
+      'Liam', 'Noah', 'Oliver', 'Elijah', 'Benjamin', 'Lucas', 'Henry', 'Alexander', 'Mason', 'James',
+      'Sofia', 'Priya', 'Kenji', 'Aaron', 'Emma', 'Chloe', 'Abby', 'Zack', 'Ethan', 'Jack', 'Sarah',
+      'Leo', 'Carlos', 'Mei', 'Yuki', 'Omar', 'Fatima', 'Santiago', 'Elena', 'Nina', 'Julian', 'Grace'
+    ];
+    const lastNames = [
+      'Smith', 'Johnson', 'Williams', 'Brown', 'Jones', 'Garcia', 'Miller', 'Davis', 'Rodriguez', 'Martinez',
+      'Hernandez', 'Lopez', 'Gonzalez', 'Wilson', 'Anderson', 'Thomas', 'Taylor', 'Moore', 'Jackson', 'Martin',
+      'Lee', 'Perez', 'Thompson', 'White', 'Harris', 'Sanchez', 'Clark', 'Ramirez', 'Lewis', 'Robinson',
+      'Walker', 'Young', 'Allen', 'King', 'Wright', 'Scott', 'Torres', 'Nguyen', 'Hill', 'Flores', 'Green', 'Adams'
+    ];
+
+    const attTypes: ('High' | 'Moderate' | 'Low')[] = ['High', 'Moderate', 'Low'];
+    const stressTypes: ('High' | 'Moderate' | 'Low')[] = ['High', 'Moderate', 'Low'];
+    const fatigueTypes: ('High' | 'Moderate' | 'Low')[] = ['High', 'Moderate', 'Low'];
+    const postureTypes = ['Proper', 'Slouched', 'Moving', 'Micro-naps', 'Forward lean', 'Restless'];
+
+    const fullList = [...baseList];
+    const usedNames = new Set(baseList.map(s => s.name));
+
+    for (let i = 13; i <= 60; i++) {
+      let uniqueName = '';
+      let attempts = 0;
+      do {
+        const fn = firstNames[Math.floor(Math.random() * firstNames.length)];
+        const ln = lastNames[Math.floor(Math.random() * lastNames.length)];
+        uniqueName = `${fn} ${ln}`;
+        attempts++;
+      } while (usedNames.has(uniqueName) && attempts < 100);
+
+      usedNames.add(uniqueName);
+
+      const attentionValue = attTypes[Math.floor(Math.random() * attTypes.length)];
+      const stressValue = stressTypes[Math.floor(Math.random() * stressTypes.length)];
+      const fatigueValue = fatigueTypes[Math.floor(Math.random() * fatigueTypes.length)];
+      const hrvValue = Math.floor(Math.random() * 55) + 35; // 35 - 90
+      const gsrValue = Number((Math.random() * 7 + 2).toFixed(1)); // 2.0 - 9.0
+      const postureValue = postureTypes[Math.floor(Math.random() * postureTypes.length)];
+
+      fullList.push({
+        id: String(i),
+        name: uniqueName,
+        attention: attentionValue,
+        stress: stressValue,
+        fatigue: fatigueValue,
+        hrv: hrvValue,
+        gsr: gsrValue,
+        posture: postureValue
+      });
+    }
+
+    return fullList;
+  });
 
   const [wellnessLogs, setWellnessLogs] = useState<WellnessData[]>([]);
   const [isLogsLoading, setIsLogsLoading] = useState(false);
@@ -96,6 +153,10 @@ export default function TeacherDashboard({ cognitive, biometric }: TeacherDashbo
   const [hoveredStudent, setHoveredStudent] = useState<StudentData | null>(null);
   const [selectedAlert, setSelectedAlert] = useState<string | null>(null);
   const [classroomFocusTriggered, setClassroomFocusTriggered] = useState(false);
+
+  // Dynamic search and status layout filtering states
+  const [filterQuery, setFilterQuery] = useState('');
+  const [statusFilter, setStatusFilter] = useState<'all' | 'focus' | 'stressed' | 'fatigued'>('all');
 
   // Stats calculation
   const totalStudents = mappedStudents.length;
@@ -159,19 +220,19 @@ export default function TeacherDashboard({ cognitive, biometric }: TeacherDashbo
       const classAvgStress = Math.round(41 + (d.getDate() % 3) * 6);
       const classAvgCognitive = Math.round(74 - (d.getDate() % 3) * 5);
 
-      // Distribute 12 class students according to average cognitive load
-      let highStrainCount = 2;
-      let optimalFlowCount = 8;
-      let lowFocusCount = 2;
+      // Distribute 60 class students according to average cognitive load
+      let highStrainCount = 10;
+      let optimalFlowCount = 40;
+      let lowFocusCount = 10;
 
       if (classAvgCognitive > 74) {
-        highStrainCount = 3;
-        optimalFlowCount = 7;
-        lowFocusCount = 2;
+        highStrainCount = 15;
+        optimalFlowCount = 35;
+        lowFocusCount = 10;
       } else if (classAvgCognitive < 70) {
-        highStrainCount = 1;
-        optimalFlowCount = 6;
-        lowFocusCount = 5;
+        highStrainCount = 5;
+        optimalFlowCount = 30;
+        lowFocusCount = 25;
       }
 
       data.push({
@@ -342,47 +403,116 @@ export default function TeacherDashboard({ cognitive, biometric }: TeacherDashbo
           <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
         
         {/* HEATMAP GRID: Left Column (Span 7) */}
-        <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl">
-          <div className="flex items-center justify-between border-b border-slate-850 pb-3 mb-4">
-            <div>
-              <h3 className="font-bold text-slate-200 text-sm flex items-center gap-2">
-                <LayoutGrid className="h-4 w-4 text-sky-400" />
-                Live Seating Engagement Heatmap
-              </h3>
-              <p className="text-[11px] text-slate-400">
-                Visual matrix representing physical seat positions in the cyber-lab. Hover on a tile to probe.
-              </p>
+        <div className="lg:col-span-7 bg-slate-900 border border-slate-800 rounded-xl p-5 shadow-xl flex flex-col justify-between">
+          <div>
+            <div className="flex flex-col md:flex-row md:items-center justify-between border-b border-slate-850 pb-3 mb-4 gap-3">
+              <div>
+                <h3 className="font-bold text-slate-200 text-sm flex items-center gap-2">
+                  <LayoutGrid className="h-4 w-4 text-sky-400" />
+                  Live Seating Engagement Heatmap ({totalStudents} Desks)
+                </h3>
+                <p className="text-[11px] text-slate-400">
+                  Physical seating topology. Hover on any desk to probe deep wearable sensory streams.
+                </p>
+              </div>
+              {/* Quick Map Legend */}
+              <div className="flex items-center space-x-2 text-[9px] text-slate-400 self-start md:self-auto font-mono">
+                <span className="flex items-center"><span className="h-2 w-2 bg-emerald-500 rounded-full mr-1 animate-pulse"></span> Focus</span>
+                <span className="flex items-center"><span className="h-2 w-2 bg-yellow-500 rounded-full mr-1 animate-pulse"></span> Tired</span>
+                <span className="flex items-center"><span className="h-2 w-2 bg-rose-500 rounded-full mr-1 animate-pulse"></span> Stress</span>
+              </div>
             </div>
-            {/* Quick Map Legend */}
-            <div className="flex items-center space-x-2 text-[9px] text-slate-400">
-              <span className="flex items-center"><span className="h-2 w-2 bg-emerald-500 rounded-full mr-1"></span> Focus</span>
-              <span className="flex items-center"><span className="h-2 w-2 bg-yellow-500 rounded-full mr-1"></span> Tired</span>
-              <span className="flex items-center"><span className="h-2 w-2 bg-rose-500 rounded-full mr-1"></span> Stressed</span>
+
+            {/* HIGH-FIDELITY TOOLBAR: SEARCH & STATUS FILTERS */}
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-4">
+              <input
+                type="text"
+                placeholder="🔍 Search student name..."
+                value={filterQuery}
+                onChange={(e) => setFilterQuery(e.target.value)}
+                className="bg-slate-950 border border-slate-850 text-xs text-slate-200 px-3 py-1.5 rounded-lg focus:outline-none focus:border-indigo-500 placeholder-slate-600 font-sans"
+              />
+              <div className="flex items-center gap-1.5 p-1 bg-slate-950 rounded-lg border border-slate-850 font-sans">
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('all')}
+                  className={`flex-1 py-1 text-[9px] font-bold font-mono uppercase rounded transition-all cursor-pointer ${
+                    statusFilter === 'all' ? 'bg-indigo-600 text-slate-100' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  All ({totalStudents})
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('focus')}
+                  className={`flex-1 py-1 text-[9px] font-bold font-mono uppercase rounded transition-all cursor-pointer ${
+                    statusFilter === 'focus' ? 'bg-emerald-950/60 text-emerald-450 border border-emerald-900/40' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  Focus
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('stressed')}
+                  className={`flex-1 py-1 text-[9px] font-bold font-mono uppercase rounded transition-all cursor-pointer ${
+                    statusFilter === 'stressed' ? 'bg-rose-950/60 text-rose-450 border border-rose-900/40' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  Stress
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatusFilter('fatigued')}
+                  className={`flex-1 py-1 text-[9px] font-bold font-mono uppercase rounded transition-all cursor-pointer ${
+                    statusFilter === 'fatigued' ? 'bg-amber-950/60 text-yellow-450 border border-amber-900/40' : 'text-slate-500 hover:text-slate-300'
+                  }`}
+                >
+                  Tired
+                </button>
+              </div>
             </div>
           </div>
 
-          {/* Interactive Responsive Grid representing 12 desks */}
-          <div className="grid grid-cols-4 gap-3.5 pt-2">
+          {/* Interactive Seating Grid representing 60 desks, scrollable & dense */}
+          <div className="grid grid-cols-4 sm:grid-cols-5 md:grid-cols-6 lg:grid-cols-6 gap-2 overflow-y-auto max-h-[380px] p-1 pr-2 scrollbar-none">
             {mappedStudents.map((student) => {
-              let colorClass = 'border-slate-800 bg-slate-950 hover:border-slate-600 text-slate-300';
+              // Determine status highlight class
+              let colorClass = 'border-slate-850 bg-slate-950/80 hover:border-slate-500 text-slate-300';
               if (student.attention === 'High' && student.stress !== 'High') {
-                colorClass = 'bg-emerald-950/20 text-emerald-300 border-emerald-900/60 hover:border-emerald-600';
+                colorClass = 'bg-emerald-950/15 text-emerald-400 border-emerald-950/80 hover:border-emerald-600';
               } else if (student.stress === 'High') {
-                colorClass = 'bg-rose-950/20 text-rose-300 border-rose-900/60 hover:border-rose-600 animate-pulse';
+                colorClass = 'bg-rose-950/15 text-rose-400 border-rose-950/80 hover:border-rose-600';
               } else if (student.fatigue === 'High' || student.attention === 'Low') {
-                colorClass = 'bg-amber-950/20 text-yellow-300 border-amber-900/60 hover:border-yellow-600';
+                colorClass = 'bg-amber-950/15 text-yellow-405 border-amber-950/80 hover:border-yellow-600';
               }
+
+              // Filter match evaluation
+              const matchesSearch = student.name.toLowerCase().includes(filterQuery.toLowerCase());
+              let matchesStatus = true;
+              if (statusFilter === 'focus') {
+                matchesStatus = student.attention === 'High' && student.stress !== 'High';
+              } else if (statusFilter === 'stressed') {
+                matchesStatus = student.stress === 'High';
+              } else if (statusFilter === 'fatigued') {
+                matchesStatus = student.fatigue === 'High' || student.attention === 'Low';
+              }
+
+              const visible = matchesSearch && matchesStatus;
 
               return (
                 <div
                   key={student.id}
                   onMouseEnter={() => setHoveredStudent(student)}
                   onMouseLeave={() => setHoveredStudent(null)}
-                  className={`p-3 rounded-lg border cursor-pointer text-center transition-all ${colorClass}`}
+                  className={`p-2 rounded-lg border cursor-pointer text-center transition-all duration-200 flex flex-col justify-between h-[52px] ${colorClass} ${
+                    visible ? 'opacity-100 scale-100 hover:shadow-md' : 'opacity-25 scale-95 hover:opacity-40'
+                  }`}
                 >
-                  <strong className="text-xs truncate block">{student.name.split(' ')[0]}</strong>
-                  <span className="text-[9px] text-slate-400 block font-mono mt-1 pr-1 bg-slate-900/80 rounded py-0.5 mt-1">
-                    GSR {student.gsr} • HRV {student.hrv}
+                  <strong className="text-[10px] truncate block leading-tight text-slate-200">
+                    {student.name.split(' ')[0]}
+                  </strong>
+                  <span className="text-[8.5px] text-slate-500 block font-mono pr-1 bg-slate-950 border border-slate-900/60 rounded py-0.5 tracking-tight scale-90">
+                    HRV {student.hrv}
                   </span>
                 </div>
               );

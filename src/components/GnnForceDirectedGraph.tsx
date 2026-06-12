@@ -115,7 +115,16 @@ export default function GnnForceDirectedGraph({
   ];
 
   // State
-  const [nodes, setNodes] = useState<StudentCollabNode[]>(studentsProp || initialStudents);
+  const [nodes, setNodes] = useState<StudentCollabNode[]>(() => {
+    const rawNodes = studentsProp || initialStudents;
+    return rawNodes.map(n => ({
+      ...n,
+      x: isNaN(n.x) || n.x === undefined ? 100 : n.x,
+      y: isNaN(n.y) || n.y === undefined ? 100 : n.y,
+      vx: isNaN((n as any).vx) || (n as any).vx === undefined ? 0 : (n as any).vx,
+      vy: isNaN((n as any).vy) || (n as any).vy === undefined ? 0 : (n as any).vy
+    }));
+  });
   const [edges, setEdges] = useState<CollabEdge[]>(edgesProp || initialEdges);
 
   // Synchronize dynamic inputs from parent props change
@@ -124,12 +133,16 @@ export default function GnnForceDirectedGraph({
       setNodes(prev => {
         return studentsProp.map(sp => {
           const match = prev.find(p => p.id === sp.id);
+          const px = match ? match.x : sp.x;
+          const py = match ? match.y : sp.y;
+          const pvx = match ? match.vx : 0;
+          const pvy = match ? match.vy : 0;
           return {
             ...sp,
-            x: match ? match.x : sp.x,
-            y: match ? match.y : sp.y,
-            vx: match ? match.vx : 0,
-            vy: match ? match.vy : 0
+            x: isNaN(px) || px === undefined ? (isNaN(sp.x) || sp.x === undefined ? 100 : sp.x) : px,
+            y: isNaN(py) || py === undefined ? (isNaN(sp.y) || sp.y === undefined ? 100 : sp.y) : py,
+            vx: isNaN(pvx) || pvx === undefined ? 0 : pvx,
+            vy: isNaN(pvy) || pvy === undefined ? 0 : pvy
           };
         });
       });
@@ -309,6 +322,12 @@ export default function GnnForceDirectedGraph({
         const cx = width / 2;
         const cy = height / 2;
         nextNodes.forEach(node => {
+          // Fallback sanity checks to prevent NaN cascade or drag residue in spatial metrics
+          if (isNaN(node.x) || node.x === undefined) node.x = Math.random() * (width - 100) + 50;
+          if (isNaN(node.y) || node.y === undefined) node.y = Math.random() * (height - 100) + 50;
+          if (isNaN(node.vx) || node.vx === undefined) node.vx = 0;
+          if (isNaN(node.vy) || node.vy === undefined) node.vy = 0;
+
           if (node.id === draggingId) return;
 
           const dx = cx - node.x;
@@ -325,7 +344,7 @@ export default function GnnForceDirectedGraph({
           // Clamp maximum speed to avoid chaotic flyaways
           const speedCap = 12;
           const speed = Math.sqrt(node.vx * node.vx + node.vy * node.vy);
-          if (speed > speedCap) {
+          if (speed > speedCap && speed > 0) {
             node.vx = (node.vx / speed) * speedCap;
             node.vy = (node.vy / speed) * speedCap;
           }
@@ -340,6 +359,10 @@ export default function GnnForceDirectedGraph({
           if (node.x > width - padding) { node.x = width - padding; node.vx = -node.vx * 0.2; }
           if (node.y < padding) { node.y = padding; node.vy = -node.vy * 0.2; }
           if (node.y > height - padding) { node.y = height - padding; node.vy = -node.vy * 0.2; }
+
+          // Final verification guarantees node coordinates are never NaN
+          if (isNaN(node.x)) node.x = width / 2;
+          if (isNaN(node.y)) node.y = height / 2;
         });
 
         return nextNodes;
@@ -356,8 +379,10 @@ export default function GnnForceDirectedGraph({
   const handleMouseDown = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const pWidth = rect.width || 640;
+    const pHeight = rect.height || 400;
+    const mouseX = ((e.clientX - rect.left) / pWidth) * width;
+    const mouseY = ((e.clientY - rect.top) / pHeight) * height;
 
     // Detect if mouse is over any student node circle (radius approx 24px)
     const clickedNode = nodes.find(node => {
@@ -377,8 +402,10 @@ export default function GnnForceDirectedGraph({
   const handleMouseMove = (e: React.MouseEvent<SVGSVGElement>) => {
     if (!draggingId || !svgRef.current) return;
     const rect = svgRef.current.getBoundingClientRect();
-    const mouseX = e.clientX - rect.left;
-    const mouseY = e.clientY - rect.top;
+    const pWidth = rect.width || 640;
+    const pHeight = rect.height || 400;
+    const mouseX = ((e.clientX - rect.left) / pWidth) * width;
+    const mouseY = ((e.clientY - rect.top) / pHeight) * height;
 
     setNodes(prev => prev.map(node => {
       if (node.id === draggingId) {
@@ -681,6 +708,8 @@ export default function GnnForceDirectedGraph({
             <svg 
               ref={svgRef}
               className="absolute inset-0 w-full h-full cursor-crosshair"
+              viewBox="0 0 640 400"
+              preserveAspectRatio="xMidYMid meet"
               onMouseDown={handleMouseDown}
               onMouseMove={handleMouseMove}
               onMouseUp={handleMouseUpOrLeave}
