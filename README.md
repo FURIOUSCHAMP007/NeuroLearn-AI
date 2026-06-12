@@ -1,4 +1,4 @@
-# NeuroLearn AI 🧠💻
+[# NeuroLearn AI 🧠💻
 ### **Brain-Adaptive Education & Student Wellness Ecosystem**
 
 > **Samsung "Solve for Tomorrow" Multi-Stakeholder Proposal Concept**  
@@ -265,4 +265,4 @@ npm run start
 Operating with neural telemetry demands absolute respect for clinical/student boundaries:
 1.  **On-Device Anonymization:** Raw biometric values (EEG wave ratios and galvanic frequencies) remain locally inside temporary memory and are never uploaded. Only high-level state strings (e.g., "Low Attention") are sent to API routes.
 2.  **Parental Consent Gates:** Full COPPA and GDPR workflows are implemented so that students under standard ages must have their tokens verified before parent oversight becomes functional.
-3.  **Anonymized Database Partitioning:** Firestore matches students by decoupled numeric IDs, protecting user names and preventing metadata association.
+3.  **Anonymized Database Partitioning:** Firestore matches students by decoupled numeric IDs, protecting user names and preventing metadata association.](https://github.com/FURIOUSCHAMP007/NeuroLearn-AI/blob/main/README.md)
